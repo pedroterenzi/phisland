@@ -37,7 +37,7 @@ function navegar(aba) {
 function abrirModal(id) { document.getElementById(id).classList.remove('escondido'); }
 function fecharModal(id) { document.getElementById(id).classList.add('escondido'); }
 
-// 🔄 MOTOR DE REATIVIDADE: Puxa tudo e redesenha a tela de uma vez
+// 🔄 MOTOR DE REATIVIDADE
 async function recarregarTudo() {
     try {
         const res = await fetch(`${API_URL}/dashboard/unificado?date=${hojeStr}&start_week=${startStr}&end_week=${endStr}`);
@@ -64,14 +64,11 @@ async function recarregarTudo() {
                 document.getElementById('lbl-cal-meta').innerText = p.daily_calorie_goal;
                 document.getElementById('lbl-peso-info').innerText = `${p.current_weight}kg ➔ ${p.target_weight}kg`;
                 
-                // Calcula progresso do peso (Assumindo perda de peso)
                 let totalPerder = p.current_weight - p.target_weight;
-                let pctPeso = totalPerder <= 0 ? 100 : 0; // Se já bateu, 100%
+                let pctPeso = totalPerder <= 0 ? 100 : 0; 
                 document.getElementById('barra-peso').style.width = `${pctPeso}%`;
-                
                 document.getElementById('barra-calorias').style.width = `${data.saude.progresso}%`;
                 
-                // Preenche form do modal
                 document.getElementById('perfil-peso-atual').value = p.current_weight;
                 document.getElementById('perfil-peso-alvo').value = p.target_weight;
                 document.getElementById('perfil-calorias').value = p.daily_calorie_goal;
@@ -97,7 +94,7 @@ async function salvarTransacao() {
     await fetch(`${API_URL}/transactions`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) });
     document.getElementById('fin-amount').value = "";
     fecharModal('modal-transacao');
-    recarregarTudo(); // Atualiza os números instantaneamente
+    recarregarTudo();
 }
 
 async function salvarMetaFin() {
@@ -189,7 +186,6 @@ async function carregarPlannerSemanal() {
     
     const diasNomes = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
     
-    // Roda os 7 dias da semana
     for(let i = 0; i < 7; i++) {
         let loopDate = new Date(startOfWeek);
         loopDate.setDate(startOfWeek.getDate() + i);

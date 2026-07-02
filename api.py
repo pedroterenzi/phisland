@@ -7,7 +7,6 @@ from psycopg2.extras import RealDictCursor
 
 app = FastAPI()
 
-# 🛡️ Correção do CORS para evitar bloqueios do navegador
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,6 +22,8 @@ def inicializar_banco():
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         
+        # 🚨 COMANDO DE RESET (DROP TABLE) DELETADO DAQUI! Seus dados não serão mais apagados.
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY, name VARCHAR(255), nickname VARCHAR(100), login VARCHAR(100) UNIQUE, password VARCHAR(100)
@@ -80,7 +81,7 @@ def inicializar_banco():
         conn.commit()
         cursor.close()
         conn.close()
-        print("⚡ Banco de Dados Sincronizado!")
+        print("⚡ Banco de Dados Sincronizado e Seguro contra Resets!")
     except Exception as e:
         print(f"Erro BD: {str(e)}")
 
@@ -165,7 +166,6 @@ def listar_exercicios():
     cursor.execute("SELECT * FROM exercises;")
     dados = cursor.fetchall(); cursor.close(); conn.close()
     
-    # ⚙️ Convertendo Decimais para o Front-end
     dados_formatados = []
     for d in dados:
         d_dict = dict(d)
@@ -208,7 +208,6 @@ def alternar_tarefa(id: int):
 def dashboard_unificado(user_id: int, date: str, start_week: str, end_week: str):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor(cursor_factory=RealDictCursor)
     
-    # ⚙️ 1. Metas Financeiras (Convertendo Decimal para Float)
     cursor.execute("SELECT * FROM financial_goals WHERE user_id = %s ORDER BY id DESC;", (user_id,))
     metas_fin = cursor.fetchall()
     metas_fin_formatado = []
@@ -218,7 +217,6 @@ def dashboard_unificado(user_id: int, date: str, start_week: str, end_week: str)
         m_dict['current_amount'] = float(m_dict['current_amount'])
         metas_fin_formatado.append(m_dict)
     
-    # ⚙️ 2. Metas de Saúde (Convertendo Decimal para Float)
     cursor.execute("SELECT * FROM health_goals WHERE user_id = %s ORDER BY id DESC LIMIT 1;", (user_id,))
     meta_saude = cursor.fetchone()
     if meta_saude:
@@ -227,31 +225,27 @@ def dashboard_unificado(user_id: int, date: str, start_week: str, end_week: str)
         meta_saude['target_weight'] = float(meta_saude['target_weight'])
         meta_saude['daily_calorie_goal'] = float(meta_saude['daily_calorie_goal'])
     
-    # 3. Metas de Produtividade
     cursor.execute("SELECT * FROM productivity_goals WHERE user_id = %s ORDER BY id DESC LIMIT 1;", (user_id,))
     meta_prod = cursor.fetchone()
     if meta_prod:
         meta_prod = dict(meta_prod)
 
-    # 4. Transações
     cursor.execute("SELECT * FROM transactions WHERE user_id = %s AND date LIKE %s;", (user_id, date[:7]+'%'))
     transacoes = cursor.fetchall()
     total_income = float(sum(t['amount'] for t in transacoes if t['type'] == 'income'))
     total_expense = float(sum(t['amount'] for t in transacoes if t['type'] == 'expense'))
     
-    # 5. Calorias
-    cursor.execute("SELECT COALESCE(SUM(calories_burned), 0) FROM workout_logs WHERE user_id = %s AND date = %s;", (user_id, date))
-    cal_hoje = float(cursor.fetchone()[0])
+    # 🚨 CRASH DO 500 RESOLVIDO: Trocamos o KeyError por ['total_cal']
+    cursor.execute("SELECT COALESCE(SUM(calories_burned), 0) AS total_cal FROM workout_logs WHERE user_id = %s AND date = %s;", (user_id, date))
+    cal_hoje = float(cursor.fetchone()['total_cal'])
     
-    # 6. Tarefas
-    cursor.execute("SELECT COUNT(*) FROM tasks WHERE user_id = %s AND date >= %s AND date <= %s;", (user_id, start_week, end_week))
-    total_tasks = cursor.fetchone()['count']
-    cursor.execute("SELECT COUNT(*) FROM tasks WHERE user_id = %s AND date >= %s AND date <= %s AND is_completed = TRUE;", (user_id, start_week, end_week))
-    completed_tasks = cursor.fetchone()['count']
+    cursor.execute("SELECT COUNT(*) as qtd FROM tasks WHERE user_id = %s AND date >= %s AND date <= %s;", (user_id, start_week, end_week))
+    total_tasks = cursor.fetchone()['qtd']
+    cursor.execute("SELECT COUNT(*) as qtd FROM tasks WHERE user_id = %s AND date >= %s AND date <= %s AND is_completed = TRUE;", (user_id, start_week, end_week))
+    completed_tasks = cursor.fetchone()['qtd']
     
     cursor.close(); conn.close()
     
-    # Cálculos de Progresso
     prog_financas = 100.0 if total_expense == 0 else max(0.0, 100.0 - ((total_expense / (total_income if total_income > 0 else 3000.0)) * 100.0))
     prog_saude = min((cal_hoje / float(meta_saude['daily_calorie_goal'])) * 100.0, 100.0) if meta_saude else 0.0
     prog_produtividade = (completed_tasks / total_tasks * 100.0) if total_tasks > 0 else 0.0

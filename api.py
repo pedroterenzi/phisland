@@ -7,10 +7,11 @@ from psycopg2.extras import RealDictCursor
 
 app = FastAPI()
 
+# 🛡️ Correção do CORS para evitar bloqueios do navegador
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -22,14 +23,12 @@ def inicializar_banco():
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         
-        # 1. USUÁRIOS
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY, name VARCHAR(255), nickname VARCHAR(100), login VARCHAR(100) UNIQUE, password VARCHAR(100)
             );
         """)
         
-        # 2. TRANSAÇÕES E METAS FINANCEIRAS
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS transactions (
                 id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id) ON DELETE CASCADE,
@@ -43,7 +42,6 @@ def inicializar_banco():
             );
         """)
         
-        # 3. METAS DE SAÚDE E TREINOS
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS health_goals (
                 id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id) ON DELETE CASCADE,
@@ -62,7 +60,6 @@ def inicializar_banco():
             );
         """)
         
-        # 4. METAS DE PRODUTIVIDADE E TAREFAS
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS productivity_goals (
                 id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id) ON DELETE CASCADE,
@@ -80,17 +77,18 @@ def inicializar_banco():
         if cursor.fetchone()[0] == 0:
             cursor.execute("INSERT INTO exercises (name, muscle_group, calories_per_minute) VALUES ('Musculação', 'Geral', 6.0), ('Corrida', 'Cardio', 11.0);")
             
-        conn.commit(); cursor.close(); conn.close()
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print("⚡ Banco de Dados Sincronizado!")
     except Exception as e:
         print(f"Erro BD: {str(e)}")
 
 inicializar_banco()
 
-# --- MODELOS ---
 class ModeloCadastro(BaseModel): name: str; nickname: str; login: str; password: str
 class ModeloLogin(BaseModel): login: str; password: str
 class ModeloTransacao(BaseModel): user_id: int; type: str; amount: float; category: str; date: str
-# ADICIONADO O CURRENT_AMOUNT AQUI
 class ModeloMetaFin(BaseModel): user_id: int; title: str; dream: str; target_amount: float; current_amount: float; months: int
 class ModeloAporte(BaseModel): amount: float
 class ModeloMetaSaude(BaseModel): user_id: int; title: str; dream: str; current_weight: float; target_weight: float; months: int
@@ -98,7 +96,6 @@ class ModeloMetaProd(BaseModel): user_id: int; title: str; dream: str; months: i
 class ModeloTreino(BaseModel): user_id: int; exercise_id: int; duration_minutes: int; date: str
 class ModeloTarefa(BaseModel): user_id: int; title: str; date: str
 
-# --- AUTENTICAÇÃO ---
 @app.post("/auth/signup")
 def cadastrar_usuario(obj: ModeloCadastro):
     try:
@@ -120,11 +117,9 @@ def logar_usuario(obj: ModeloLogin):
     if user: return user
     raise HTTPException(status_code=401, detail="Credenciais inválidas.")
 
-# --- ENDPOINTS METAS ---
 @app.post("/goals/finance")
 def criar_meta_fin(obj: ModeloMetaFin):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
-    # INSERE O CURRENT_AMOUNT NO BANCO
     cursor.execute("INSERT INTO financial_goals (user_id, title, dream, target_amount, current_amount, months) VALUES (%s, %s, %s, %s, %s, %s);", 
                    (obj.user_id, obj.title, obj.dream, obj.target_amount, obj.current_amount, obj.months))
     conn.commit(); cursor.close(); conn.close()
@@ -157,7 +152,6 @@ def criar_meta_prod(obj: ModeloMetaProd):
     conn.commit(); cursor.close(); conn.close()
     return {"status": "ok"}
 
-# --- TRANSAÇÕES E TREINOS ---
 @app.post("/transactions")
 def salvar_transacao(obj: ModeloTransacao):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
@@ -170,7 +164,15 @@ def listar_exercicios():
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute("SELECT * FROM exercises;")
     dados = cursor.fetchall(); cursor.close(); conn.close()
-    return dados
+    
+    # ⚙️ Convertendo Decimais para o Front-end
+    dados_formatados = []
+    for d in dados:
+        d_dict = dict(d)
+        d_dict['calories_per_minute'] = float(d_dict['calories_per_minute'])
+        dados_formatados.append(d_dict)
+        
+    return dados_formatados
 
 @app.post("/workouts")
 def logar_treino(obj: ModeloTreino):
@@ -202,28 +204,46 @@ def alternar_tarefa(id: int):
     conn.commit(); cursor.close(); conn.close()
     return {"status": "ok"}
 
-# --- DASHBOARD UNIFICADO (CELEBRO) ---
 @app.get("/dashboard/unificado")
 def dashboard_unificado(user_id: int, date: str, start_week: str, end_week: str):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor(cursor_factory=RealDictCursor)
     
+    # ⚙️ 1. Metas Financeiras (Convertendo Decimal para Float)
     cursor.execute("SELECT * FROM financial_goals WHERE user_id = %s ORDER BY id DESC;", (user_id,))
     metas_fin = cursor.fetchall()
+    metas_fin_formatado = []
+    for m in metas_fin:
+        m_dict = dict(m)
+        m_dict['target_amount'] = float(m_dict['target_amount'])
+        m_dict['current_amount'] = float(m_dict['current_amount'])
+        metas_fin_formatado.append(m_dict)
     
+    # ⚙️ 2. Metas de Saúde (Convertendo Decimal para Float)
     cursor.execute("SELECT * FROM health_goals WHERE user_id = %s ORDER BY id DESC LIMIT 1;", (user_id,))
     meta_saude = cursor.fetchone()
+    if meta_saude:
+        meta_saude = dict(meta_saude)
+        meta_saude['current_weight'] = float(meta_saude['current_weight'])
+        meta_saude['target_weight'] = float(meta_saude['target_weight'])
+        meta_saude['daily_calorie_goal'] = float(meta_saude['daily_calorie_goal'])
     
+    # 3. Metas de Produtividade
     cursor.execute("SELECT * FROM productivity_goals WHERE user_id = %s ORDER BY id DESC LIMIT 1;", (user_id,))
     meta_prod = cursor.fetchone()
+    if meta_prod:
+        meta_prod = dict(meta_prod)
 
+    # 4. Transações
     cursor.execute("SELECT * FROM transactions WHERE user_id = %s AND date LIKE %s;", (user_id, date[:7]+'%'))
     transacoes = cursor.fetchall()
-    total_income = sum(t['amount'] for t in transacoes if t['type'] == 'income')
-    total_expense = sum(t['amount'] for t in transacoes if t['type'] == 'expense')
+    total_income = float(sum(t['amount'] for t in transacoes if t['type'] == 'income'))
+    total_expense = float(sum(t['amount'] for t in transacoes if t['type'] == 'expense'))
     
+    # 5. Calorias
     cursor.execute("SELECT COALESCE(SUM(calories_burned), 0) FROM workout_logs WHERE user_id = %s AND date = %s;", (user_id, date))
     cal_hoje = float(cursor.fetchone()[0])
     
+    # 6. Tarefas
     cursor.execute("SELECT COUNT(*) FROM tasks WHERE user_id = %s AND date >= %s AND date <= %s;", (user_id, start_week, end_week))
     total_tasks = cursor.fetchone()['count']
     cursor.execute("SELECT COUNT(*) FROM tasks WHERE user_id = %s AND date >= %s AND date <= %s AND is_completed = TRUE;", (user_id, start_week, end_week))
@@ -231,15 +251,16 @@ def dashboard_unificado(user_id: int, date: str, start_week: str, end_week: str)
     
     cursor.close(); conn.close()
     
-    prog_financas = 100 if total_expense == 0 else max(0, 100 - ((total_expense / (total_income if total_income > 0 else 3000)) * 100))
-    prog_saude = min((cal_hoje / float(meta_saude['daily_calorie_goal'])) * 100, 100) if meta_saude else 0
-    prog_produtividade = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+    # Cálculos de Progresso
+    prog_financas = 100.0 if total_expense == 0 else max(0.0, 100.0 - ((total_expense / (total_income if total_income > 0 else 3000.0)) * 100.0))
+    prog_saude = min((cal_hoje / float(meta_saude['daily_calorie_goal'])) * 100.0, 100.0) if meta_saude else 0.0
+    prog_produtividade = (completed_tasks / total_tasks * 100.0) if total_tasks > 0 else 0.0
     engajamento_global = (prog_financas + prog_saude + prog_produtividade) / 3.0
 
-    educador_fin = f"Seu Sonho: {metas_fin[0]['dream']}. Mantenha o foco!" if metas_fin else "Ainda não tem metas. Crie um sonho abaixo!"
+    educador_fin = f"Seu Sonho: {metas_fin_formatado[0]['dream']}. Mantenha o foco!" if metas_fin_formatado else "Ainda não tem metas. Crie um sonho abaixo!"
     
     return {
-        "financas": {"saldo": total_income - total_expense, "gastos": total_expense, "metas": metas_fin, "progresso": prog_financas, "msg_educador": educador_fin},
+        "financas": {"saldo": total_income - total_expense, "gastos": total_expense, "metas": metas_fin_formatado, "progresso": prog_financas, "msg_educador": educador_fin},
         "saude": {"meta": meta_saude, "calorias_hoje": cal_hoje, "progresso": prog_saude},
         "produtividade": {"meta": meta_prod, "progresso": prog_produtividade},
         "global_pct": engajamento_global

@@ -28,35 +28,47 @@ function navegar(aba) {
     });
     
     const btn = document.getElementById(`nav-${aba}`);
-    btn.classList.add('ativo');
-    if(aba === 'financas') btn.style.color = "var(--fin-color)";
-    if(aba === 'saude') btn.style.color = "var(--sau-color)";
-    if(aba === 'produtividade') btn.style.color = "var(--pro-color)";
+    if(btn) {
+        btn.classList.add('ativo');
+        if(aba === 'financas') btn.style.color = "var(--fin-color)";
+        if(aba === 'saude') btn.style.color = "var(--sau-color)";
+        if(aba === 'produtividade') btn.style.color = "var(--pro-color)";
+    }
 }
 
-function abrirModal(id) { document.getElementById(id).classList.remove('escondido'); }
-function fecharModal(id) { document.getElementById(id).classList.add('escondido'); }
+function abrirModal(id) { 
+    const modal = document.getElementById(id);
+    if(modal) modal.classList.remove('escondido'); 
+}
+function fecharModal(id) { 
+    const modal = document.getElementById(id);
+    if(modal) modal.classList.add('escondido'); 
+}
 
-// 🔄 MOTOR DE REATIVIDADE
+// 🔄 MOTOR DE REATIVIDADE E SINCRONIZAÇÃO
 async function recarregarTudo() {
     try {
         const res = await fetch(`${API_URL}/dashboard/unificado?date=${hojeStr}&start_week=${startStr}&end_week=${endStr}`);
-        if(res.ok) {
-            const data = await res.json();
-            
-            // 1. GLOBAL
+        if(!res.ok) return;
+        
+        const data = await res.json();
+        
+        // 1. GLOBAL
+        if(document.getElementById('lbl-global-pct')) {
             document.getElementById('lbl-global-pct').innerText = `${data.global_pct.toFixed(0)}%`;
             document.getElementById('barra-global').style.width = `${data.global_pct}%`;
-            
-            // 2. FINANÇAS
+        }
+        
+        // 2. FINANÇAS
+        if(document.getElementById('lbl-saldo')) {
             document.getElementById('lbl-saldo').innerText = `R$ ${data.financas.saldo.toFixed(2)}`;
             document.getElementById('lbl-gastos').innerText = `R$ ${data.financas.gastos.toFixed(2)}`;
             document.getElementById('barra-fin').style.width = `${data.financas.progresso}%`;
-            
             renderizarMetasFinanceiras(data.financas.metas);
-            
-            // 3. SAÚDE
-            document.getElementById('barra-sau').style.width = `${data.saude.progresso}%`;
+        }
+        
+        // 3. SAÚDE
+        if(document.getElementById('lbl-cal-hoje')) {
             document.getElementById('lbl-cal-hoje').innerText = data.saude.calorias_hoje.toFixed(0);
             
             if(data.saude.perfil) {
@@ -64,8 +76,7 @@ async function recarregarTudo() {
                 document.getElementById('lbl-cal-meta').innerText = p.daily_calorie_goal;
                 document.getElementById('lbl-peso-info').innerText = `${p.current_weight}kg ➔ ${p.target_weight}kg`;
                 
-                let totalPerder = p.current_weight - p.target_weight;
-                let pctPeso = totalPerder <= 0 ? 100 : 0; 
+                let pctPeso = (p.current_weight <= p.target_weight) ? 100 : 0; 
                 document.getElementById('barra-peso').style.width = `${pctPeso}%`;
                 document.getElementById('barra-calorias').style.width = `${data.saude.progresso}%`;
                 
@@ -73,12 +84,16 @@ async function recarregarTudo() {
                 document.getElementById('perfil-peso-alvo').value = p.target_weight;
                 document.getElementById('perfil-calorias').value = p.daily_calorie_goal;
             }
-            
-            // 4. PRODUTIVIDADE
+        }
+        
+        // 4. PRODUTIVIDADE
+        if(document.getElementById('barra-pro')) {
             document.getElementById('barra-pro').style.width = `${data.produtividade.progresso}%`;
             carregarPlannerSemanal();
         }
-    } catch (e) { console.error("Erro reatividade:", e); }
+    } catch (e) { 
+        console.error("Aviso de sincronização interna:", e); 
+    }
 }
 
 // ================= FINANÇAS =================
@@ -89,7 +104,7 @@ async function salvarTransacao() {
         category: document.getElementById('fin-category').value,
         date: hojeStr
     };
-    if(!obj.amount) return alert("Insira o valor.");
+    if(!obj.amount || obj.amount <= 0) return alert("Insira um valor válido.");
     
     await fetch(`${API_URL}/transactions`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) });
     document.getElementById('fin-amount').value = "";
@@ -101,18 +116,27 @@ async function salvarMetaFin() {
     const obj = {
         title: document.getElementById('meta-titulo').value,
         target_amount: parseFloat(document.getElementById('meta-valor').value),
-        deadline: document.getElementById('meta-prazo').value
+        deadline: document.getElementById('meta-prazo').value || hojeStr
     };
-    if(!obj.title || !obj.target_amount) return alert("Preencha título e valor.");
+    if(!obj.title || !obj.target_amount) return alert("Preencha o título e o valor da meta.");
     
     await fetch(`${API_URL}/financial_goals`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) });
+    document.getElementById('meta-titulo').value = "";
+    document.getElementById('meta-valor').value = "";
     fecharModal('modal-meta-fin');
     recarregarTudo();
 }
 
 function renderizarMetasFinanceiras(metas) {
     const container = document.getElementById('lista-metas-fin');
+    if(!container) return;
     container.innerHTML = "";
+    
+    if(metas.length === 0) {
+        container.innerHTML = "<p style='font-size:12px; color:var(--text-muted); text-align:center;'>Nenhuma meta cadastrada ainda.</p>";
+        return;
+    }
+
     metas.forEach(m => {
         let pct = Math.min((m.current_amount / m.target_amount) * 100, 100);
         container.innerHTML += `
@@ -123,8 +147,8 @@ function renderizarMetasFinanceiras(metas) {
                 </div>
                 <div class="prog-container" style="height:6px; margin: 8px 0;"><div class="prog-fill bg-fin" style="width: ${pct}%;"></div></div>
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:11px; color:var(--text-muted);">R$ ${m.current_amount} de R$ ${m.target_amount}</span>
-                    <button class="btn-outline" style="padding:4px 8px; border-radius:6px; font-size:11px; cursor:pointer;" onclick="prepararAporte(${m.id})">+ Guardar</button>
+                    <span style="font-size:11px; color:var(--text-muted);">R$ ${parseFloat(m.current_amount).toFixed(2)} de R$ ${parseFloat(m.target_amount).toFixed(2)}</span>
+                    <button class="btn-outline" style="padding:4px 8px; border-radius:6px; font-size:11px; cursor:pointer; color: white;" onclick="prepararAporte(${m.id})">+ Guardar</button>
                 </div>
             </div>
         `;
@@ -139,7 +163,7 @@ function prepararAporte(id) {
 async function salvarAporte() {
     const id = document.getElementById('aporte-meta-id').value;
     const val = parseFloat(document.getElementById('aporte-valor').value);
-    if(!val) return;
+    if(!val || val <= 0) return;
     
     await fetch(`${API_URL}/financial_goals/${id}/add`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({amount: val}) });
     document.getElementById('aporte-valor').value = "";
@@ -152,7 +176,8 @@ async function carregarCatalogoExercicios() {
     const res = await fetch(`${API_URL}/exercises`);
     if(res.ok) {
         const dados = await res.json();
-        document.getElementById('saude-exercicio').innerHTML = dados.map(e => `<option value="${e.id}">${e.name} (${e.calories_per_minute} kcal/min)</option>`).join('');
+        const box = document.getElementById('saude-exercicio');
+        if(box) box.innerHTML = dados.map(e => `<option value="${e.id}">${e.name} (${e.calories_per_minute} kcal/min)</option>`).join('');
     }
 }
 
@@ -162,14 +187,21 @@ async function salvarPerfilSaude() {
         target_weight: parseFloat(document.getElementById('perfil-peso-alvo').value),
         daily_calorie_goal: parseFloat(document.getElementById('perfil-calorias').value)
     };
+    if(isNaN(obj.current_weight)) return alert("Preencha os dados de peso corretamente.");
+    
     await fetch(`${API_URL}/health/profile`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) });
     fecharModal('modal-perfil-saude');
     recarregarTudo();
 }
 
 async function salvarTreino() {
-    const obj = { exercise_id: parseInt(document.getElementById('saude-exercicio').value), duration_minutes: parseInt(document.getElementById('saude-tempo').value), date: hojeStr };
-    if(!obj.duration_minutes) return alert("Insira os minutos.");
+    const obj = { 
+        exercise_id: parseInt(document.getElementById('saude-exercicio').value), 
+        duration_minutes: parseInt(document.getElementById('saude-tempo').value), 
+        date: hojeStr 
+    };
+    if(!obj.duration_minutes) return alert("Insira os minutos praticados.");
+    
     await fetch(`${API_URL}/workouts`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) });
     document.getElementById('saude-tempo').value = "";
     recarregarTudo();
@@ -182,6 +214,7 @@ async function carregarPlannerSemanal() {
     const tarefasSemana = await res.json();
     
     const container = document.getElementById('planner-semanal');
+    if(!container) return;
     container.innerHTML = "";
     
     const diasNomes = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -206,7 +239,7 @@ async function carregarPlannerSemanal() {
                     <button class="btn-outline" style="border:none; padding:4px 8px; border-radius:6px; cursor:pointer; font-weight:bold; background: rgba(139, 92, 246, 0.1); color: var(--pro-color);" onclick="addTarefaNoDia('${loopStr}')">+ Add</button>
                 </div>
                 <div class="day-content" id="content-${loopStr}">
-                    ${htmlTarefas || '<span style="font-size:11px; color:var(--text-muted);">Dia livre. Nenhuma tarefa.</span>'}
+                    ${htmlTarefas || '<span style="font-size:11px; color:var(--text-muted);">Dia livre.</span>'}
                 </div>
             </div>
         `;
@@ -215,7 +248,7 @@ async function carregarPlannerSemanal() {
 
 async function addTarefaNoDia(dataStr) {
     const titulo = prompt("Digite a nova tarefa para esta data:");
-    if(!titulo) return;
+    if(!titulo || titulo.trim() === "") return;
     await fetch(`${API_URL}/tasks`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({title: titulo, date: dataStr}) });
     recarregarTudo();
 }

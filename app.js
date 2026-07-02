@@ -46,19 +46,12 @@ async function executarCadastro() {
             localStorage.setItem("user_id", user.user_id);
             localStorage.setItem("user_nickname", user.nickname);
             window.location.reload();
-        } else { 
-            alert("Erro ao cadastrar."); 
-        }
-    } catch(e) {
-        alert("Servidor indisponível. Aguarde um minuto.");
-    }
+        } else { alert("Erro ao cadastrar."); }
+    } catch(e) { alert("Servidor indisponível. Aguarde."); }
 }
 
 async function executarLogin() {
-    const obj = { 
-        login: document.getElementById('login-user').value.trim(), 
-        password: document.getElementById('login-pass').value 
-    };
+    const obj = { login: document.getElementById('login-user').value.trim(), password: document.getElementById('login-pass').value };
     try {
         const res = await fetch(`${API_URL}/auth/login`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) });
         if(res.ok) {
@@ -66,18 +59,11 @@ async function executarLogin() {
             localStorage.setItem("user_id", user.id);
             localStorage.setItem("user_nickname", user.nickname);
             window.location.reload();
-        } else { 
-            alert("Login ou senha inválidos."); 
-        }
-    } catch(e) {
-        alert("Erro no servidor.");
-    }
+        } else { alert("Login ou senha inválidos."); }
+    } catch(e) { alert("Erro no servidor."); }
 }
 
-function fazerLogout() { 
-    localStorage.clear(); 
-    window.location.reload(); 
-}
+function fazerLogout() { localStorage.clear(); window.location.reload(); }
 
 function navegar(aba) {
     document.querySelectorAll('section').forEach(s => s.classList.add('escondido'));
@@ -91,10 +77,10 @@ function navegar(aba) {
         if(aba === 'produtividade') btn.style.color = "var(--pro-color)";
     }
 }
-
 function abrirModal(id) { document.getElementById(id).classList.remove('escondido'); }
 function fecharModal(id) { document.getElementById(id).classList.add('escondido'); }
 
+// ================= RENDERIZADOR ROBUSTO E DETALHADO =================
 async function recarregarTudo() {
     const user_id = localStorage.getItem("user_id");
     if(!user_id) return;
@@ -106,47 +92,110 @@ async function recarregarTudo() {
         if(!res.ok) return;
         const data = await res.json();
         
-        document.getElementById('lbl-global-pct').innerText = `${data.global_pct.toFixed(0)}%`;
-        document.getElementById('barra-global').style.width = `${data.global_pct}%`;
-        
-        document.getElementById('lbl-saldo').innerText = `R$ ${data.financas.saldo.toFixed(2)}`;
-        document.getElementById('lbl-gastos').innerText = `R$ ${data.financas.gastos.toFixed(2)}`;
-        document.getElementById('barra-fin').style.width = `${data.financas.progresso}%`;
-        document.getElementById('educador-fin').innerText = data.financas.msg_educador;
-        renderizarMetasFinanceiras(data.financas.metas);
-        
-        if(data.saude.meta) {
-            document.getElementById('box-saude-dados').classList.remove('escondido');
-            const m = data.saude.meta;
-            document.getElementById('educador-sau').innerText = `Foco: "${m.dream}" (${m.title})`;
-            document.getElementById('lbl-cal-meta').innerText = parseFloat(m.daily_calorie_goal).toFixed(0);
-            document.getElementById('lbl-peso-info').innerText = `${m.current_weight}kg ➔ ${m.target_weight}kg (${m.months}m)`;
-            let pctPeso = (m.current_weight <= m.target_weight) ? 100 : 0;
-            document.getElementById('barra-peso').style.width = `${pctPeso}%`;
-            document.getElementById('barra-calorias').style.width = `${data.saude.progresso}%`;
-            document.getElementById('lbl-cal-hoje').innerText = data.saude.calorias_hoje.toFixed(0);
+        if(document.getElementById('lbl-global-pct')) {
+            document.getElementById('lbl-global-pct').innerText = `${data.global_pct.toFixed(0)}%`;
+            document.getElementById('barra-global').style.width = `${data.global_pct}%`;
         }
         
-        document.getElementById('barra-pro').style.width = `${data.produtividade.progresso}%`;
-        if(data.produtividade.meta) {
-            document.getElementById('educador-prod').innerText = `Motivação: "${data.produtividade.meta.dream}"`;
+        if(document.getElementById('lbl-saldo')) {
+            document.getElementById('lbl-saldo').innerText = `R$ ${data.financas.saldo.toFixed(2)}`;
+            document.getElementById('lbl-gastos').innerText = `R$ ${data.financas.gastos.toFixed(2)}`;
+            document.getElementById('barra-fin').style.width = `${data.financas.progresso}%`;
+            if(document.getElementById('educador-fin')) document.getElementById('educador-fin').innerText = data.financas.msg_educador;
+            
+            renderizarMetasFinanceiras(data.financas.metas);
         }
         
-    } catch (e) { 
-        console.error("Aviso do banco:", e); 
-    }
+        if(document.getElementById('box-saude-dados')) {
+            if(data.saude.meta) {
+                document.getElementById('box-saude-dados').classList.remove('escondido');
+                const m = data.saude.meta;
+                document.getElementById('educador-sau').innerText = `Foco: "${m.dream}" (${m.title})`;
+                
+                let diffPeso = parseFloat(m.current_weight) - parseFloat(m.target_weight);
+                let faltaMsg = diffPeso > 0 ? `🔥 Faltam ${diffPeso.toFixed(1)}kg para bater sua meta!` : `🎉 Você atingiu sua meta de peso!`;
+                
+                document.getElementById('lbl-peso-falta').innerText = faltaMsg;
+                document.getElementById('lbl-peso-info').innerText = `${m.current_weight}kg ➔ ${m.target_weight}kg (${m.months}m)`;
+                
+                // Barra de peso simbólica MVP
+                let pctPeso = diffPeso <= 0 ? 100 : 10; 
+                document.getElementById('barra-peso').style.width = `${pctPeso}%`;
+                
+                document.getElementById('lbl-cal-meta').innerText = parseFloat(m.daily_calorie_goal).toFixed(0);
+                document.getElementById('lbl-cal-hoje').innerText = data.saude.calorias_hoje.toFixed(0);
+                document.getElementById('barra-calorias').style.width = `${data.saude.progresso}%`;
+            } else {
+                document.getElementById('box-saude-dados').classList.add('escondido');
+                document.getElementById('educador-sau').innerText = "Você ainda não definiu sua Meta Física. Clique em 'Definir Sonho' para começar e ver seu progresso.";
+            }
+        }
+        
+        if(document.getElementById('barra-pro')) {
+            document.getElementById('barra-pro').style.width = `${data.produtividade.progresso}%`;
+            if(data.produtividade.meta && document.getElementById('educador-prod')) {
+                document.getElementById('educador-prod').innerText = `Motivação: "${data.produtividade.meta.dream}"`;
+            }
+        }
+        
+    } catch (e) { console.error("Aviso:", e); }
 }
 
 async function salvarMetaFin() {
     const obj = {
         user_id: parseInt(localStorage.getItem("user_id")),
         title: document.getElementById('meta-fin-titulo').value,
-        dream: document.getElementById('meta-fin-dream').value,
+        dream: document.getElementById('meta-fin-dream').value || "Indefinido",
         target_amount: parseFloat(document.getElementById('meta-fin-valor').value),
-        months: parseInt(document.getElementById('meta-fin-meses').value)
+        current_amount: parseFloat(document.getElementById('meta-fin-atual').value) || 0,
+        months: parseInt(document.getElementById('meta-fin-meses').value) || 12
     };
+    if(!obj.title || isNaN(obj.target_amount)) return alert("Preencha título e o Valor Total.");
     await fetch(`${API_URL}/goals/finance`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) });
     fecharModal('modal-meta-fin'); recarregarTudo();
+}
+
+// ================= RENDERIZAR METAS E MOSTRAR O QUANTO FALTA =================
+function renderizarMetasFinanceiras(metas) {
+    const container = document.getElementById('lista-metas-fin');
+    if(!container) return; container.innerHTML = "";
+    
+    if(!metas || metas.length === 0) {
+        container.innerHTML = "<p style='font-size:12px; color:var(--text-muted); text-align:center;'>Nenhuma meta cadastrada ainda.</p>";
+        return;
+    }
+
+    metas.forEach(m => {
+        let atual = parseFloat(m.current_amount) || 0;
+        let alvo = parseFloat(m.target_amount) || 1;
+        let pct = Math.min((atual / alvo) * 100, 100);
+        let falta = alvo - atual;
+
+        container.innerHTML += `
+            <div class="meta-card">
+                <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:bold; margin-bottom: 5px;">
+                    <span>🎯 ${m.title}</span>
+                    <span style="color:var(--fin-color);">${pct.toFixed(1)}%</span>
+                </div>
+                <div style="font-size:11px; color:var(--text-muted); font-style:italic; margin-bottom: 8px;">"${m.dream}"</div>
+                
+                <div class="prog-container" style="height:8px; margin: 8px 0;"><div class="prog-fill bg-fin" style="width: ${pct}%;"></div></div>
+                
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 10px;">
+                    <div style="display:flex; flex-direction:column;">
+                        <span style="font-size:12px; color:white; font-weight: bold;">R$ ${atual.toFixed(2)} de R$ ${alvo.toFixed(2)}</span>
+                        <span style="font-size:11px; color:var(--danger-color); font-weight:bold;">Falta: R$ ${falta > 0 ? falta.toFixed(2) : '0.00 (Concluída!)'}</span>
+                    </div>
+                    <button class="btn-outline" style="padding:6px 12px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; color:white; border-color:var(--fin-color); background: rgba(59, 130, 246, 0.1);" onclick="prepararAporte(${m.id})">+ Aportar</button>
+                </div>
+            </div>`;
+    });
+}
+
+function prepararAporte(id) { document.getElementById('aporte-meta-id').value = id; abrirModal('modal-aporte'); }
+async function salvarAporte() {
+    await fetch(`${API_URL}/financial_goals/${document.getElementById('aporte-meta-id').value}/add`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({amount: parseFloat(document.getElementById('aporte-valor').value)}) });
+    fecharModal('modal-aporte'); recarregarTudo();
 }
 
 async function salvarMetaSaude() {
@@ -156,7 +205,7 @@ async function salvarMetaSaude() {
         dream: document.getElementById('meta-sau-dream').value,
         current_weight: parseFloat(document.getElementById('meta-sau-atual').value),
         target_weight: parseFloat(document.getElementById('meta-sau-alvo').value),
-        months: parseInt(document.getElementById('meta-sau-meses').value)
+        months: parseInt(document.getElementById('meta-sau-meses').value) || 3
     };
     await fetch(`${API_URL}/goals/health`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) });
     fecharModal('modal-meta-saude'); recarregarTudo();
@@ -167,42 +216,21 @@ async function salvarMetaProd() {
         user_id: parseInt(localStorage.getItem("user_id")),
         title: document.getElementById('meta-pro-titulo').value,
         dream: document.getElementById('meta-pro-dream').value,
-        months: parseInt(document.getElementById('meta-pro-meses').value)
+        months: parseInt(document.getElementById('meta-pro-meses').value) || 1
     };
     await fetch(`${API_URL}/goals/productivity`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) });
     fecharModal('modal-meta-prod'); recarregarTudo();
 }
 
 async function salvarTransacao() {
-    const obj = { 
-        user_id: parseInt(localStorage.getItem("user_id")), 
-        type: document.getElementById('fin-type').value, 
-        amount: parseFloat(document.getElementById('fin-amount').value), 
-        category: document.getElementById('fin-category').value, 
-        date: hojeStr 
-    };
+    const obj = { user_id: parseInt(localStorage.getItem("user_id")), type: document.getElementById('fin-type').value, amount: parseFloat(document.getElementById('fin-amount').value), category: document.getElementById('fin-category').value, date: hojeStr };
     await fetch(`${API_URL}/transactions`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) });
     fecharModal('modal-transacao'); recarregarTudo();
 }
 
-function renderizarMetasFinanceiras(metas) {
-    const c = document.getElementById('lista-metas-fin'); c.innerHTML = "";
-    metas.forEach(m => {
-        let pct = Math.min((m.current_amount / m.target_amount) * 100, 100);
-        c.innerHTML += `<div class="meta-card"><div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold;"><span>🎯 ${m.title}</span><span>${pct.toFixed(0)}%</span></div><div class="prog-container" style="height:6px; margin: 8px 0;"><div class="prog-fill bg-fin" style="width: ${pct}%;"></div></div><div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:11px; color:var(--text-muted);">R$ ${m.current_amount} de R$ ${m.target_amount}</span><button class="btn-outline" style="padding:4px 8px; border-radius:6px; font-size:11px; color:white;" onclick="prepararAporte(${m.id})">+ Guardar</button></div></div>`;
-    });
-}
-
-function prepararAporte(id) { document.getElementById('aporte-meta-id').value = id; abrirModal('modal-aporte'); }
-
-async function salvarAporte() {
-    await fetch(`${API_URL}/financial_goals/${document.getElementById('aporte-meta-id').value}/add`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({amount: parseFloat(document.getElementById('aporte-valor').value)}) });
-    fecharModal('modal-aporte'); recarregarTudo();
-}
-
 async function carregarCatalogoExercicios() {
     const res = await fetch(`${API_URL}/exercises`);
-    if(res.ok) { const d = await res.json(); document.getElementById('saude-exercicio').innerHTML = d.map(e => `<option value="${e.id}">${e.name}</option>`).join(''); }
+    if(res.ok) { const d = await res.json(); if(document.getElementById('saude-exercicio')) document.getElementById('saude-exercicio').innerHTML = d.map(e => `<option value="${e.id}">${e.name}</option>`).join(''); }
 }
 
 async function salvarTreino() {
@@ -228,8 +256,4 @@ async function addTarefaNoDia(dt) {
     await fetch(`${API_URL}/tasks`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({user_id: parseInt(localStorage.getItem("user_id")), title: t, date: dt}) });
     recarregarTudo();
 }
-
-async function toggleTarefa(id) { 
-    await fetch(`${API_URL}/tasks/${id}/toggle`, { method: 'PATCH' }); 
-    recarregarTudo(); 
-}
+async function toggleTarefa(id) { await fetch(`${API_URL}/tasks/${id}/toggle`, { method: 'PATCH' }); recarregarTudo(); }

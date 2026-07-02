@@ -15,7 +15,7 @@ let currentTransactions = [];
 let currentCategoryFilter = null;
 let currentHistoryTab = 'all';
 
-// Ícones SVG Limpos e Elegantes
+// Ícones SVG Limpos
 const iconEdit = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`;
 const iconTrash = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
 const iconIncome = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>`;
@@ -79,11 +79,9 @@ function navegar(aba) {
 function abrirModal(id) { document.getElementById(id).classList.remove('escondido'); }
 function fecharModal(id) { document.getElementById(id).classList.add('escondido'); }
 
-// ================= MOTOR DE REATIVIDADE =================
 async function recarregarTudo() {
     const user_id = localStorage.getItem("user_id");
     if(!user_id) return;
-    
     carregarPlannerSemanal_Visual(user_id);
 
     let selectedMonth = document.getElementById('filtro-mes-fin').value;
@@ -95,7 +93,6 @@ async function recarregarTudo() {
         if(!res.ok) return;
         const data = await res.json();
         
-        // GLOBAL E FINANÇAS
         const saldoEl = document.getElementById('lbl-saldo');
         saldoEl.innerText = `R$ ${data.financas.saldo.toFixed(2)}`;
         document.getElementById('lbl-rendas').innerText = `R$ ${data.financas.rendas.toFixed(2)}`;
@@ -117,13 +114,11 @@ async function recarregarTudo() {
         }
 
         renderizarMetasFinanceiras(data.financas.metas);
-        
         currentTransactions = data.financas.transacoes;
         renderizarGraficoPizza(currentTransactions);
         renderizarHistorico(currentTransactions);
         renderizarRecorrentes(data.financas.recorrentes);
 
-        // SAÚDE E PRODUTIVIDADE
         if(data.saude.meta) {
             document.getElementById('box-saude-dados').classList.remove('escondido');
             const m = data.saude.meta;
@@ -136,11 +131,10 @@ async function recarregarTudo() {
             document.getElementById('lbl-cal-hoje').innerText = data.saude.calorias_hoje.toFixed(0);
             document.getElementById('barra-calorias').style.width = `${data.saude.progresso}%`;
         }
-        
     } catch (e) { console.error("Aviso:", e); }
 }
 
-// ================= GRÁFICOS E HISTÓRICOS PREMIUM =================
+// ================= GRÁFICOS PREMIUM COM TOOLTIP E RANKING =================
 function renderizarGraficoPizza(transacoes) {
     const ctx = document.getElementById('financeChart').getContext('2d');
     const despesas = transacoes.filter(t => t.type === 'expense');
@@ -153,12 +147,37 @@ function renderizarGraficoPizza(transacoes) {
 
     if(financeChartInstance) financeChartInstance.destroy();
 
+    // Lógica do Ranking
+    const rankingContainer = document.getElementById('ranking-categorias');
     if(labels.length === 0) {
-        financeChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: ['Sem gastos'], datasets: [{ data: [1], backgroundColor: ['#27272a'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+        financeChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: ['Sem gastos'], datasets: [{ data: [1], backgroundColor: ['#27272a'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: {enabled: false} } } });
+        if(rankingContainer) rankingContainer.innerHTML = '';
         return;
     }
 
-    // 🚀 Destaque dinâmico (HoverOffset manual)
+    const categoriasArray = labels.map(cat => ({ name: cat, amount: categoriasMap[cat] })).sort((a, b) => b.amount - a.amount);
+    const totalDespesas = dataValues.reduce((a, b) => a + b, 0);
+
+    if(rankingContainer) {
+        rankingContainer.innerHTML = categoriasArray.map(cat => {
+            const indexOriginal = labels.indexOf(cat.name);
+            const color = backgroundColors[indexOriginal % backgroundColors.length];
+            const pct = totalDespesas > 0 ? ((cat.amount / totalDespesas) * 100).toFixed(1) : 0;
+            return `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 12px; height: 12px; border-radius: 4px; background: ${color};"></div>
+                        <span style="font-size: 13px; font-weight: 600; color: white;">${cat.name}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 13px; font-weight: 800; color: white;">R$ ${cat.amount.toFixed(2)}</span>
+                        <span style="font-size: 11px; color: var(--text-muted); width: 40px; text-align: right;">${pct}%</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
     const activeOffsets = labels.map(l => l === currentCategoryFilter ? 15 : 0);
 
     financeChartInstance = new Chart(ctx, {
@@ -166,7 +185,22 @@ function renderizarGraficoPizza(transacoes) {
         data: { labels: labels, datasets: [{ data: dataValues, backgroundColor: backgroundColors, borderWidth: 0, hoverOffset: 10, offset: activeOffsets }] },
         options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { position: 'right', labels: { color: '#a1a1aa', font: { family: 'Plus Jakarta Sans', size: 11 } } } },
+            plugins: { 
+                legend: { position: 'right', labels: { color: '#a1a1aa', font: { family: 'Plus Jakarta Sans', size: 11 } } },
+                tooltip: {
+                    backgroundColor: '#18191c', titleColor: '#ffffff', bodyColor: '#a1a1aa', borderColor: '#2a2c32', borderWidth: 1, padding: 12, cornerRadius: 8, displayColors: true, boxPadding: 4,
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (label) label += ': ';
+                            if (context.parsed !== null) label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed);
+                            return label;
+                        }
+                    },
+                    titleFont: { family: 'Plus Jakarta Sans', size: 13, weight: 'bold' },
+                    bodyFont: { family: 'Plus Jakarta Sans', size: 12 }
+                }
+            },
             onClick: (event, elements) => {
                 if (elements.length > 0) {
                     const idx = elements[0].index;
@@ -178,7 +212,6 @@ function renderizarGraficoPizza(transacoes) {
                         currentCategoryFilter = catClicada;
                         document.getElementById('lbl-filtro-categoria').innerText = `(${catClicada})`;
                     }
-                    // Redesenha para aplicar o Offset
                     renderizarGraficoPizza(currentTransactions);
                     renderizarHistorico(currentTransactions);
                 }
@@ -195,18 +228,14 @@ function setHistoryTab(tab) {
     document.getElementById('tab-hist-all').style.color = "var(--text-muted)";
     document.getElementById('tab-hist-income').style.color = "var(--text-muted)";
     document.getElementById('tab-hist-expense').style.color = "var(--text-muted)";
-
     const btn = document.getElementById(`tab-hist-${tab}`);
-    btn.classList.add('active');
-    btn.style.color = "white";
-    
+    btn.classList.add('active'); btn.style.color = "white";
     renderizarHistorico(currentTransactions);
 }
 
 function renderizarHistorico(transacoes) {
     const container = document.getElementById('lista-transacoes');
     container.innerHTML = "";
-    
     let lista = transacoes;
     if(currentHistoryTab === 'income') lista = lista.filter(t => t.type === 'income');
     if(currentHistoryTab === 'expense') lista = lista.filter(t => t.type === 'expense');
@@ -244,8 +273,7 @@ function renderizarHistorico(transacoes) {
 }
 
 function renderizarRecorrentes(recorrentes) {
-    const container = document.getElementById('lista-recorrentes');
-    container.innerHTML = "";
+    const container = document.getElementById('lista-recorrentes'); container.innerHTML = "";
     if(recorrentes.length === 0) return;
     recorrentes.forEach(r => {
         container.innerHTML += `<div class="history-item" style="border-left: 3px solid var(--fin-color);"><div class="history-details" style="margin-left: 5px;"><div class="history-title">${r.description}</div><div class="history-sub">Vence dia ${r.due_day} • ${r.category}</div></div><div class="history-amount text-danger" style="margin-right: 10px;">R$ ${r.amount.toFixed(2)}</div><button class="btn-small" style="background: rgba(239,68,68,0.15); color:#ef4444;" onclick="deletarRecorrente(${r.id})">${iconTrash}</button></div>`;
@@ -255,32 +283,17 @@ function renderizarRecorrentes(recorrentes) {
 function atualizarCategoriasSelect() {
     const tipo = document.getElementById('fin-type').value;
     const catSelect = document.getElementById('fin-category');
-    if (tipo === 'income') {
-        catSelect.innerHTML = `<option value="Salário">Salário</option><option value="Ganho Extra">Ganho Extra</option><option value="Investimentos">Investimentos</option><option value="Rendimento">Rendimento</option><option value="Outros">Outros</option>`;
-    } else {
-        catSelect.innerHTML = `<option value="Moradia">Moradia</option><option value="Alimentação">Alimentação</option><option value="Transporte">Transporte</option><option value="Saúde">Saúde</option><option value="Educação">Educação</option><option value="Lazer">Lazer</option><option value="Esportes">Esportes</option><option value="Compras">Compras</option><option value="Assinaturas">Assinaturas</option><option value="Outros">Outros</option>`;
-    }
+    if (tipo === 'income') catSelect.innerHTML = `<option value="Salário">Salário</option><option value="Ganho Extra">Ganho Extra</option><option value="Investimentos">Investimentos</option><option value="Rendimento">Rendimento</option><option value="Outros">Outros</option>`;
+    else catSelect.innerHTML = `<option value="Moradia">Moradia</option><option value="Alimentação">Alimentação</option><option value="Transporte">Transporte</option><option value="Saúde">Saúde</option><option value="Educação">Educação</option><option value="Lazer">Lazer</option><option value="Esportes">Esportes</option><option value="Compras">Compras</option><option value="Assinaturas">Assinaturas</option><option value="Outros">Outros</option>`;
 }
 
 function prepararNovaTransacao() {
-    document.getElementById('fin-id').value = "";
-    document.getElementById('fin-amount').value = "";
-    document.getElementById('fin-desc').value = "";
-    document.getElementById('fin-date').value = hojeStr;
-    document.getElementById('transacao-modal-title').innerText = "Nova Movimentação";
-    atualizarCategoriasSelect();
-    abrirModal('modal-transacao');
+    document.getElementById('fin-id').value = ""; document.getElementById('fin-amount').value = ""; document.getElementById('fin-desc').value = ""; document.getElementById('fin-date').value = hojeStr; document.getElementById('transacao-modal-title').innerText = "Nova Movimentação";
+    atualizarCategoriasSelect(); abrirModal('modal-transacao');
 }
 
 function prepararEdicaoTransacao(id, type, amount, category, description, date) {
-    document.getElementById('fin-id').value = id;
-    document.getElementById('fin-type').value = type;
-    atualizarCategoriasSelect();
-    document.getElementById('fin-amount').value = amount;
-    document.getElementById('fin-category').value = category;
-    document.getElementById('fin-desc').value = description;
-    document.getElementById('fin-date').value = date;
-    document.getElementById('transacao-modal-title').innerText = "Editar Movimentação";
+    document.getElementById('fin-id').value = id; document.getElementById('fin-type').value = type; atualizarCategoriasSelect(); document.getElementById('fin-amount').value = amount; document.getElementById('fin-category').value = category; document.getElementById('fin-desc').value = description; document.getElementById('fin-date').value = date; document.getElementById('transacao-modal-title').innerText = "Editar Movimentação";
     abrirModal('modal-transacao');
 }
 
@@ -288,7 +301,6 @@ async function salvarTransacao() {
     const id = document.getElementById('fin-id').value;
     const obj = { user_id: parseInt(localStorage.getItem("user_id")), type: document.getElementById('fin-type').value, amount: parseFloat(document.getElementById('fin-amount').value), category: document.getElementById('fin-category').value, description: document.getElementById('fin-desc').value.trim() || document.getElementById('fin-category').value, date: document.getElementById('fin-date').value };
     if(isNaN(obj.amount) || obj.amount <= 0 || !obj.date) return alert("Insira valor e data corretos.");
-    
     if(id) { await fetch(`${API_URL}/transactions/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) }); } 
     else { await fetch(`${API_URL}/transactions`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) }); }
     fecharModal('modal-transacao'); recarregarTudo();
@@ -358,24 +370,13 @@ function renderizarMetasFinanceiras(metas) {
 }
 
 function prepararTransacaoMeta(id) { 
-    document.getElementById('meta-tx-id').value = id; 
-    document.getElementById('meta-tx-date').value = hojeStr; 
-    document.getElementById('meta-tx-amount').value = ""; 
-    document.getElementById('meta-tx-desc').value = ""; 
-    abrirModal('modal-meta-tx'); 
+    document.getElementById('meta-tx-id').value = id; document.getElementById('meta-tx-date').value = hojeStr; document.getElementById('meta-tx-amount').value = ""; document.getElementById('meta-tx-desc').value = ""; abrirModal('modal-meta-tx'); 
 }
-
 async function salvarTransacaoMeta() { 
     const id = document.getElementById('meta-tx-id').value;
-    const obj = {
-        type: document.getElementById('meta-tx-type').value,
-        amount: parseFloat(document.getElementById('meta-tx-amount').value),
-        description: document.getElementById('meta-tx-desc').value.trim(),
-        date: document.getElementById('meta-tx-date').value
-    };
+    const obj = { type: document.getElementById('meta-tx-type').value, amount: parseFloat(document.getElementById('meta-tx-amount').value), description: document.getElementById('meta-tx-desc').value.trim(), date: document.getElementById('meta-tx-date').value };
     if(!obj.amount || obj.amount <= 0 || !obj.description) return alert("Preencha o valor e a Origem/Motivo.");
-    await fetch(`${API_URL}/goals/finance/${id}/transaction`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) }); 
-    fecharModal('modal-meta-tx'); recarregarTudo(); 
+    await fetch(`${API_URL}/goals/finance/${id}/transaction`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) }); fecharModal('modal-meta-tx'); recarregarTudo(); 
 }
 
 // --- SAÚDE E PRODUTIVIDADE ---

@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -23,267 +23,188 @@ def inicializar_banco():
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         
-        # 1. PILAR FINANCEIRO
+        # TABELAS FINANCEIRAS
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS transactions (
-                id SERIAL PRIMARY KEY,
-                type VARCHAR(20) NOT NULL,
-                amount NUMERIC NOT NULL,
-                category VARCHAR(100) NOT NULL,
-                date VARCHAR(50) NOT NULL
+                id SERIAL PRIMARY KEY, type VARCHAR(20), amount NUMERIC, category VARCHAR(100), date VARCHAR(50)
+            );
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS financial_goals (
+                id SERIAL PRIMARY KEY, title VARCHAR(255), target_amount NUMERIC, current_amount NUMERIC DEFAULT 0, deadline VARCHAR(50)
             );
         """)
         
-        # 2. PILAR SAÚDE
+        # TABELAS DE SAÚDE
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS health_profiles (
-                id SERIAL PRIMARY KEY,
-                current_weight NUMERIC NOT NULL,
-                target_weight NUMERIC NOT NULL,
-                daily_calorie_goal NUMERIC NOT NULL
+                id SERIAL PRIMARY KEY, current_weight NUMERIC, target_weight NUMERIC, daily_calorie_goal NUMERIC
             );
         """)
-        
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS exercises (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                muscle_group VARCHAR(100) NOT NULL,
-                calories_per_minute NUMERIC NOT NULL
+                id SERIAL PRIMARY KEY, name VARCHAR(255), muscle_group VARCHAR(100), calories_per_minute NUMERIC
             );
         """)
-        
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS workout_logs (
-                id SERIAL PRIMARY KEY,
-                exercise_id INT REFERENCES exercises(id),
-                duration_minutes INT NOT NULL,
-                calories_burned NUMERIC NOT NULL,
-                date VARCHAR(50) NOT NULL
+                id SERIAL PRIMARY KEY, exercise_id INT, duration_minutes INT, calories_burned NUMERIC, date VARCHAR(50)
             );
         """)
         
-        # 3. PILAR PRODUTIVIDADE
+        # TABELAS DE PRODUTIVIDADE
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS tasks (
-                id SERIAL PRIMARY KEY,
-                title VARCHAR(255) NOT NULL,
-                is_completed BOOLEAN DEFAULT FALSE,
-                date VARCHAR(50) NOT NULL
+                id SERIAL PRIMARY KEY, title VARCHAR(255), is_completed BOOLEAN DEFAULT FALSE, date VARCHAR(50)
             );
         """)
-        
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS library_content (
-                id SERIAL PRIMARY KEY,
-                title VARCHAR(255) NOT NULL,
-                category VARCHAR(100) NOT NULL,
-                content_text TEXT NOT NULL
+                id SERIAL PRIMARY KEY, title VARCHAR(255), category VARCHAR(100), content_text TEXT
             );
         """)
         
-        # Carga Inicial de Exercícios (Se estiver vazia)
+        # Cargas Iniciais Padrão
         cursor.execute("SELECT COUNT(*) FROM exercises;")
         if cursor.fetchone()[0] == 0:
-            cursor.execute("""
-                INSERT INTO exercises (name, muscle_group, calories_per_minute) VALUES 
-                ('Supino Reto', 'Peito', 7.5),
-                ('Puxada Alta', 'Costas', 7.0),
-                ('Corrida na Esteira', 'Cardio', 11.0),
-                ('Bicicleta Ergométrica', 'Cardio', 8.5);
-            """)
+            cursor.execute("INSERT INTO exercises (name, muscle_group, calories_per_minute) VALUES ('Musculação', 'Geral', 6.0), ('Corrida', 'Cardio', 11.0), ('Bicicleta', 'Cardio', 8.0);")
             
-        # Carga Inicial da Biblioteca (Se estiver vazia)
         cursor.execute("SELECT COUNT(*) FROM library_content;")
         if cursor.fetchone()[0] == 0:
-            cursor.execute("""
-                INSERT INTO library_content (title, category, content_text) VALUES 
-                ('Hábitos Atômicos (Resumo)', 'Produtividade', 'Pequenas mudanças de 1% todos os dias geram resultados gigantescos a longo prazo. Foque nos sistemas, não apenas nas metas.'),
-                ('Pai Rico, Pai Pobre (Resumo)', 'Finanças', 'A diferença entre ativos e passivos. Ativos põem dinheiro no seu bolso; passivos tiram. Busque a liberdade financeira comprando ativos.');
-            """)
+            cursor.execute("INSERT INTO library_content (title, category, content_text) VALUES ('Hábitos Atômicos', 'Produtividade', 'Seja 1% melhor todos os dias.'), ('Pai Rico, Pai Pobre', 'Finanças', 'Compre ativos, não passivos.');")
             
-        # Perfil de saúde inicial padrão se não houver nenhum
         cursor.execute("SELECT COUNT(*) FROM health_profiles;")
         if cursor.fetchone()[0] == 0:
-            cursor.execute("INSERT INTO health_profiles (current_weight, target_weight, daily_calorie_goal) VALUES (90.0, 75.0, 2000.0);")
+            cursor.execute("INSERT INTO health_profiles (current_weight, target_weight, daily_calorie_goal) VALUES (90.0, 75.0, 500.0);")
         
         conn.commit()
         cursor.close()
         conn.close()
-        print("⚡ Banco de Dados do MVP totalmente estruturado e sincronizado!")
     except Exception as e:
-        print(f"❌ Erro ao estruturar banco: {str(e)}")
+        print(f"Erro BD: {str(e)}")
 
 inicializar_banco()
 
-# --- MODELOS PYDANTIC ---
-class ModeloTransacao(BaseModel):
-    type: str
-    amount: float
-    category: str
-    date: str
-
-class ModeloPerfilSaude(BaseModel):
-    current_weight: float
-    target_weight: float
-    daily_calorie_goal: float
-
-class ModeloTreino(BaseModel):
-    exercise_id: int
-    duration_minutes: int
-    date: str
-
-class ModeloTarefa(BaseModel):
-    title: str
-    date: str
+# --- MODELOS ---
+class ModeloTransacao(BaseModel): type: str; amount: float; category: str; date: str
+class ModeloMetaFin(BaseModel): title: str; target_amount: float; deadline: str
+class ModeloAporte(BaseModel): amount: float
+class ModeloPerfilSaude(BaseModel): current_weight: float; target_weight: float; daily_calorie_goal: float
+class ModeloTreino(BaseModel): exercise_id: int; duration_minutes: int; date: str
+class ModeloTarefa(BaseModel): title: str; date: str
 
 # --- ENDPOINTS FINANCEIROS ---
 @app.post("/transactions")
 def salvar_transacao(obj: ModeloTransacao):
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO transactions (type, amount, category, date) VALUES (%s, %s, %s, %s);", (obj.type, obj.amount, obj.category, obj.date))
-        conn.commit()
-        cursor.close()
-        conn.close()
-        return {"status": "sucesso"}
-    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
+    conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
+    cursor.execute("INSERT INTO transactions (type, amount, category, date) VALUES (%s, %s, %s, %s);", (obj.type, obj.amount, obj.category, obj.date))
+    conn.commit(); cursor.close(); conn.close()
+    return {"status": "ok"}
 
-# --- ENDPOINTS DE SAÚDE ---
-@app.get("/health/profile")
-def obter_perfil_saude():
-    conn = psycopg2.connect(DATABASE_URL)
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute("SELECT * FROM health_profiles LIMIT 1;")
-    perfil = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    return perfil
+@app.post("/financial_goals")
+def criar_meta(obj: ModeloMetaFin):
+    conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
+    cursor.execute("INSERT INTO financial_goals (title, target_amount, deadline) VALUES (%s, %s, %s);", (obj.title, obj.target_amount, obj.deadline))
+    conn.commit(); cursor.close(); conn.close()
+    return {"status": "ok"}
 
+@app.put("/financial_goals/{id}/add")
+def aportar_meta(id: int, obj: ModeloAporte):
+    conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
+    cursor.execute("UPDATE financial_goals SET current_amount = current_amount + %s WHERE id = %s;", (obj.amount, id))
+    conn.commit(); cursor.close(); conn.close()
+    return {"status": "ok"}
+
+# --- ENDPOINTS SAÚDE ---
 @app.put("/health/profile")
-def atualizar_perfil_saude(obj: ModeloPerfilSaude):
-    conn = psycopg2.connect(DATABASE_URL)
-    cursor = conn.cursor()
+def atualizar_perfil(obj: ModeloPerfilSaude):
+    conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
     cursor.execute("UPDATE health_profiles SET current_weight = %s, target_weight = %s, daily_calorie_goal = %s WHERE id = 1;", (obj.current_weight, obj.target_weight, obj.daily_calorie_goal))
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return {"status": "atualizado"}
+    conn.commit(); cursor.close(); conn.close()
+    return {"status": "ok"}
 
 @app.get("/exercises")
 def listar_exercicios():
-    conn = psycopg2.connect(DATABASE_URL)
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute("SELECT * FROM exercises ORDER BY muscle_group, name;")
-    dados = cursor.fetchall()
-    cursor.close()
-    conn.close()
+    conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute("SELECT * FROM exercises;")
+    dados = cursor.fetchall(); cursor.close(); conn.close()
     return dados
 
 @app.post("/workouts")
 def logar_treino(obj: ModeloTreino):
-    conn = psycopg2.connect(DATABASE_URL)
-    cursor = conn.cursor()
-    # Busca gasto calórico por minuto do exercício
+    conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
     cursor.execute("SELECT calories_per_minute FROM exercises WHERE id = %s;", (obj.exercise_id,))
-    cal_por_min = float(cursor.fetchone()[0])
-    cal_queimadas = cal_por_min * obj.duration_minutes
-    
-    cursor.execute("INSERT INTO workout_logs (exercise_id, duration_minutes, calories_burned, date) VALUES (%s, %s, %s, %s);", (obj.exercise_id, obj.duration_minutes, cal_queimadas, obj.date))
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return {"status": "sucesso"}
+    cal = float(cursor.fetchone()[0]) * obj.duration_minutes
+    cursor.execute("INSERT INTO workout_logs (exercise_id, duration_minutes, calories_burned, date) VALUES (%s, %s, %s, %s);", (obj.exercise_id, obj.duration_minutes, cal, obj.date))
+    conn.commit(); cursor.close(); conn.close()
+    return {"status": "ok"}
 
-# --- ENDPOINTS DE PRODUTIVIDADE ---
-@app.get("/tasks")
-def listar_tarefas(date: str):
-    conn = psycopg2.connect(DATABASE_URL)
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute("SELECT * FROM tasks WHERE date = %s ORDER BY id ASC;", (date,))
-    dados = cursor.fetchall()
-    cursor.close()
-    conn.close()
+# --- ENDPOINTS PRODUTIVIDADE ---
+@app.get("/tasks/week")
+def listar_tarefas_semana(start: str, end: str):
+    conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute("SELECT * FROM tasks WHERE date >= %s AND date <= %s ORDER BY date ASC, id ASC;", (start, end))
+    dados = cursor.fetchall(); cursor.close(); conn.close()
     return dados
 
 @app.post("/tasks")
 def criar_tarefa(obj: ModeloTarefa):
-    conn = psycopg2.connect(DATABASE_URL)
-    cursor = conn.cursor()
+    conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
     cursor.execute("INSERT INTO tasks (title, date) VALUES (%s, %s);", (obj.title, obj.date))
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return {"status": "sucesso"}
+    conn.commit(); cursor.close(); conn.close()
+    return {"status": "ok"}
 
 @app.patch("/tasks/{id}/toggle")
 def alternar_tarefa(id: int):
-    conn = psycopg2.connect(DATABASE_URL)
-    cursor = conn.cursor()
+    conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
     cursor.execute("UPDATE tasks SET is_completed = NOT is_completed WHERE id = %s;", (id,))
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return {"status": "alterado"}
+    conn.commit(); cursor.close(); conn.close()
+    return {"status": "ok"}
 
 @app.get("/library")
 def obter_biblioteca():
-    conn = psycopg2.connect(DATABASE_URL)
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute("SELECT * FROM library_content;")
-    dados = cursor.fetchall()
-    cursor.close()
-    conn.close()
+    dados = cursor.fetchall(); cursor.close(); conn.close()
     return dados
 
-# --- DASHBOARD UNIFICADO (MÉTRICAS DA BARRA GLOBAL) ---
+# --- ENDPOINT GLOBAL UNIFICADO ---
 @app.get("/dashboard/unificado")
-def obter_dashboard_unificado(date: str):
-    conn = psycopg2.connect(DATABASE_URL)
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
+def dashboard_unificado(date: str, start_week: str, end_week: str):
+    conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor(cursor_factory=RealDictCursor)
     
     # Finanças
-    cursor.execute("SELECT * FROM transactions;")
+    cursor.execute("SELECT * FROM transactions WHERE date LIKE %s;", (date[:7]+'%',)) # Puxa do mês
     transacoes = cursor.fetchall()
     total_income = sum(t['amount'] for t in transacoes if t['type'] == 'income')
     total_expense = sum(t['amount'] for t in transacoes if t['type'] == 'expense')
-    saldo = total_income - total_expense
-    limite_mensal = 3000.00
+    cursor.execute("SELECT * FROM financial_goals;")
+    metas_fin = cursor.fetchall()
     
     # Saúde
     cursor.execute("SELECT * FROM health_profiles LIMIT 1;")
     perfil = cursor.fetchone()
     cursor.execute("SELECT COALESCE(SUM(calories_burned), 0) FROM workout_logs WHERE date = %s;", (date,))
-    cal_queimadas = float(cursor.fetchone()[0])
+    cal_hoje = float(cursor.fetchone()[0])
     
-    # Produtividade
-    cursor.execute("SELECT COUNT(*) FROM tasks WHERE date = %s;", (date,))
+    # Produtividade (Métricas da Semana)
+    cursor.execute("SELECT COUNT(*) FROM tasks WHERE date >= %s AND date <= %s;", (start_week, end_week))
     total_tasks = cursor.fetchone()['count']
-    cursor.execute("SELECT COUNT(*) FROM tasks WHERE date = %s AND is_completed = TRUE;", (date,))
+    cursor.execute("SELECT COUNT(*) FROM tasks WHERE date >= %s AND date <= %s AND is_completed = TRUE;", (start_week, end_week))
     completed_tasks = cursor.fetchone()['count']
     
-    cursor.close()
-    conn.close()
+    cursor.close(); conn.close()
     
-    # Cálculo do Engajamento Global (Barra Unificada)
-    progresso_financas = min((total_expense / limite_mensal), 1.0) if total_expense > 0 else 0
-    progresso_financas = 1.0 - progresso_financas # Quanto menos gasta, melhor o progresso financeiro
+    # Progressos Individuais (0 a 100)
+    prog_financas = 100 if total_expense == 0 else max(0, 100 - ((total_expense / (total_income if total_income > 0 else 3000)) * 100))
+    prog_saude = min((cal_hoje / float(perfil['daily_calorie_goal'])) * 100, 100) if perfil else 0
+    prog_produtividade = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
     
-    progresso_saude = min((cal_queimadas / 500.0), 1.0) # Meta diária de queimar 500kcal batendo treinos
-    progresso_prod = (completed_tasks / total_tasks) if total_tasks > 0 else 0
-    
-    engajamento_global = ((progresso_financas + progresso_saude + progresso_prod) / 3.0) * 100
-
-    # Mensagem Educador Estático
-    if total_expense > limite_mensal: educador = "🚨 Crítico: Limite financeiro estourado!"
-    elif completed_tasks == total_tasks and total_tasks > 0: educador = "🏆 Produtividade máxima atingida hoje!"
-    elif cal_queimadas > 300: educador = "💪 Excelente ritmo de queima calórica hoje!"
-    else: educador = "⚡ Continue executando seus hábitos para evoluir sua barra global!"
+    engajamento_global = (prog_financas + prog_saude + prog_produtividade) / 3.0
 
     return {
-        "saldo": saldo, "gastos": total_expense, "limite": limite_mensal,
-        "perfil_saude": perfil, "cal_queimadas": cal_queimadas,
-        "total_tarefas": total_tasks, "tarefas_concluidas": completed_tasks,
-        "engajamento_global": engajamento_global, "educador": educador
+        "financas": {"saldo": total_income - total_expense, "gastos": total_expense, "rendas": total_income, "metas": metas_fin, "progresso": prog_financas},
+        "saude": {"perfil": perfil, "calorias_hoje": cal_hoje, "progresso": prog_saude},
+        "produtividade": {"total": total_tasks, "concluidas": completed_tasks, "progresso": prog_produtividade},
+        "global_pct": engajamento_global
     }

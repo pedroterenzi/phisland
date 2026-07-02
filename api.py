@@ -22,11 +22,6 @@ def inicializar_banco():
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         
-        # 🚨 RESET DE FÁBRICA PARA TESTES MVP (Garante a arquitetura nova)
-        tabelas_antigas = ["transactions", "financial_goals", "health_goals", "workout_logs", "productivity_goals", "tasks", "exercises", "users"]
-        for tabela in tabelas_antigas:
-            cursor.execute(f"DROP TABLE IF EXISTS {tabela} CASCADE;")
-        
         # 1. USUÁRIOS
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -81,27 +76,29 @@ def inicializar_banco():
             );
         """)
         
-        cursor.execute("INSERT INTO exercises (name, muscle_group, calories_per_minute) VALUES ('Musculação', 'Geral', 6.0), ('Corrida', 'Cardio', 11.0);")
+        cursor.execute("SELECT COUNT(*) FROM exercises;")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("INSERT INTO exercises (name, muscle_group, calories_per_minute) VALUES ('Musculação', 'Geral', 6.0), ('Corrida', 'Cardio', 11.0);")
             
-        conn.commit()
-        cursor.close()
-        conn.close()
-        print("⚡ Banco de Dados Resetado e Sincronizado!")
+        conn.commit(); cursor.close(); conn.close()
     except Exception as e:
         print(f"Erro BD: {str(e)}")
 
 inicializar_banco()
 
+# --- MODELOS ---
 class ModeloCadastro(BaseModel): name: str; nickname: str; login: str; password: str
 class ModeloLogin(BaseModel): login: str; password: str
 class ModeloTransacao(BaseModel): user_id: int; type: str; amount: float; category: str; date: str
-class ModeloMetaFin(BaseModel): user_id: int; title: str; dream: str; target_amount: float; months: int
+# ADICIONADO O CURRENT_AMOUNT AQUI
+class ModeloMetaFin(BaseModel): user_id: int; title: str; dream: str; target_amount: float; current_amount: float; months: int
 class ModeloAporte(BaseModel): amount: float
 class ModeloMetaSaude(BaseModel): user_id: int; title: str; dream: str; current_weight: float; target_weight: float; months: int
 class ModeloMetaProd(BaseModel): user_id: int; title: str; dream: str; months: int
 class ModeloTreino(BaseModel): user_id: int; exercise_id: int; duration_minutes: int; date: str
 class ModeloTarefa(BaseModel): user_id: int; title: str; date: str
 
+# --- AUTENTICAÇÃO ---
 @app.post("/auth/signup")
 def cadastrar_usuario(obj: ModeloCadastro):
     try:
@@ -123,11 +120,13 @@ def logar_usuario(obj: ModeloLogin):
     if user: return user
     raise HTTPException(status_code=401, detail="Credenciais inválidas.")
 
+# --- ENDPOINTS METAS ---
 @app.post("/goals/finance")
 def criar_meta_fin(obj: ModeloMetaFin):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
-    cursor.execute("INSERT INTO financial_goals (user_id, title, dream, target_amount, months) VALUES (%s, %s, %s, %s, %s);", 
-                   (obj.user_id, obj.title, obj.dream, obj.target_amount, obj.months))
+    # INSERE O CURRENT_AMOUNT NO BANCO
+    cursor.execute("INSERT INTO financial_goals (user_id, title, dream, target_amount, current_amount, months) VALUES (%s, %s, %s, %s, %s, %s);", 
+                   (obj.user_id, obj.title, obj.dream, obj.target_amount, obj.current_amount, obj.months))
     conn.commit(); cursor.close(); conn.close()
     return {"status": "ok"}
 
@@ -158,6 +157,7 @@ def criar_meta_prod(obj: ModeloMetaProd):
     conn.commit(); cursor.close(); conn.close()
     return {"status": "ok"}
 
+# --- TRANSAÇÕES E TREINOS ---
 @app.post("/transactions")
 def salvar_transacao(obj: ModeloTransacao):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
@@ -202,6 +202,7 @@ def alternar_tarefa(id: int):
     conn.commit(); cursor.close(); conn.close()
     return {"status": "ok"}
 
+# --- DASHBOARD UNIFICADO (CELEBRO) ---
 @app.get("/dashboard/unificado")
 def dashboard_unificado(user_id: int, date: str, start_week: str, end_week: str):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -235,7 +236,7 @@ def dashboard_unificado(user_id: int, date: str, start_week: str, end_week: str)
     prog_produtividade = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
     engajamento_global = (prog_financas + prog_saude + prog_produtividade) / 3.0
 
-    educador_fin = f"Lembre-se do seu sonho: {metas_fin[0]['dream']}. Mantenha o controle!" if metas_fin else "Defina uma meta para acompanhar seus gastos."
+    educador_fin = f"Seu Sonho: {metas_fin[0]['dream']}. Mantenha o foco!" if metas_fin else "Ainda não tem metas. Crie um sonho abaixo!"
     
     return {
         "financas": {"saldo": total_income - total_expense, "gastos": total_expense, "metas": metas_fin, "progresso": prog_financas, "msg_educador": educador_fin},

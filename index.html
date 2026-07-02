@@ -5,25 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MVP Dev Pessoal</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg-color: #09090b; --card-bg: #131418; --text-color: #f4f4f5; --text-muted: #a1a1aa; --border-color: #27272a; --fin-color: #3b82f6; --sau-color: #10b981; --pro-color: #8b5cf6; }
+        :root { --bg-color: #09090b; --card-bg: #131418; --text-color: #f4f4f5; --text-muted: #a1a1aa; --border-color: #27272a; --fin-color: #3b82f6; --sau-color: #10b981; --pro-color: #8b5cf6; --danger-color: #ef4444; --success-color: #10b981;}
         * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-color); margin: 0; display: flex; justify-content: center; padding-bottom: 100px; }
         .app-container { width: 100%; max-width: 500px; padding: 15px; }
         .card { background: linear-gradient(145deg, #16171a 0%, #111215 100%); border: 1px solid var(--border-color); padding: 20px; border-radius: 20px; margin-bottom: 15px; }
+        
         .prog-container { width: 100%; background: #27272a; height: 10px; border-radius: 10px; margin-top: 8px; overflow: hidden; }
         .prog-fill { height: 100%; transition: width 0.5s ease; border-radius: 10px; }
         .bg-global { background: linear-gradient(90deg, var(--fin-color), var(--sau-color), var(--pro-color)); }
         .bg-fin { background: var(--fin-color); } .bg-sau { background: var(--sau-color); } .bg-pro { background: var(--pro-color); }
+        .bg-danger { background: var(--danger-color) !important; }
+        
+        .text-danger { color: var(--danger-color) !important; }
+        .text-success { color: var(--success-color) !important; }
+
         .btn { width: 100%; padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; border: none; transition: 0.2s; margin-top: 10px; color: white;}
         .btn-fin { background: var(--fin-color); } .btn-sau { background: var(--sau-color); } .btn-pro { background: var(--pro-color); }
         .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); }
+        .btn-small { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; border: none; }
+        
         .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
         .form-group label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
-        .form-group input, .form-group select, .form-group textarea { background: #18191c; border: 1px solid #33353b; padding: 12px; border-radius: 10px; color: white; font-size: 14px; width: 100%; resize: vertical;}
+        .form-group input, .form-group select, .form-group textarea { background: #18191c; border: 1px solid #33353b; padding: 12px; border-radius: 10px; color: white; font-size: 14px; width: 100%;}
+        
         .toggle-auth { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #2a2c32; padding-bottom: 10px; }
         .toggle-auth button { flex: 1; background: none; border: none; color: var(--text-muted); font-weight: 700; padding: 8px; cursor: pointer; }
         .toggle-auth button.active { color: var(--fin-color); border-bottom: 2px solid var(--fin-color); }
+        
+        /* Estilos do Histórico Financeiro */
+        .history-item { background: #18191c; padding: 12px; border-radius: 12px; border: 1px solid #2a2c32; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;}
+        .history-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 16px; background: #27272a;}
+        .history-details { flex: 1; margin: 0 10px; }
+        .history-title { font-size: 14px; font-weight: bold; color: white; margin-bottom: 2px; }
+        .history-sub { font-size: 11px; color: var(--text-muted); }
+        .history-amount { font-size: 14px; font-weight: 800; }
+        .history-actions { display: flex; gap: 5px; flex-direction: column;}
+        
         .day-block { border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
         .day-header { background: #18191c; padding: 12px; font-weight: 800; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
         .day-content { padding: 10px; background: #111215; }
@@ -43,22 +63,9 @@
 <div class="app-container">
     <div id="tela-autenticacao" class="card">
         <h2 style="text-align: center; margin-bottom: 5px;">Evolução Pessoal</h2>
-        <div class="toggle-auth">
-            <button id="tab-login" class="active" onclick="alternarAbasAuth('login')">ENTRAR</button>
-            <button id="tab-cadastro" onclick="alternarAbasAuth('cadastro')">NOVA CONTA</button>
-        </div>
-        <div id="form-login">
-            <div class="form-group"><label>Login:</label><input type="text" id="login-user"></div>
-            <div class="form-group"><label>Senha:</label><input type="password" id="login-pass"></div>
-            <button class="btn btn-fin" onclick="executarLogin()">Entrar</button>
-        </div>
-        <div id="form-cadastro" class="escondido">
-            <div class="form-group"><label>Nome Completo:</label><input type="text" id="cad-name"></div>
-            <div class="form-group"><label>Apelido:</label><input type="text" id="cad-nickname"></div>
-            <div class="form-group"><label>Crie um Login:</label><input type="text" id="cad-user"></div>
-            <div class="form-group"><label>Crie uma Senha:</label><input type="password" id="cad-pass"></div>
-            <button class="btn btn-sau" onclick="executarCadastro()">Criar Conta e Começar</button>
-        </div>
+        <div class="toggle-auth"><button id="tab-login" class="active" onclick="alternarAbasAuth('login')">ENTRAR</button><button id="tab-cadastro" onclick="alternarAbasAuth('cadastro')">NOVA CONTA</button></div>
+        <div id="form-login"><div class="form-group"><label>Login:</label><input type="text" id="login-user"></div><div class="form-group"><label>Senha:</label><input type="password" id="login-pass"></div><button class="btn btn-fin" onclick="executarLogin()">Entrar</button></div>
+        <div id="form-cadastro" class="escondido"><div class="form-group"><label>Nome Completo:</label><input type="text" id="cad-name"></div><div class="form-group"><label>Apelido:</label><input type="text" id="cad-nickname"></div><div class="form-group"><label>Crie um Login:</label><input type="text" id="cad-user"></div><div class="form-group"><label>Crie uma Senha:</label><input type="password" id="cad-pass"></div><button class="btn btn-sau" onclick="executarCadastro()">Criar Conta</button></div>
     </div>
 
     <div id="conteudo-app" class="escondido">
@@ -68,27 +75,46 @@
         </div>
 
         <div class="card" style="padding: 15px; text-align: center;">
-            <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; color: var(--text-muted);">
-                <span>CONQUISTA EVOLUTIVA GLOBAL (HOJE)</span>
-                <span id="lbl-global-pct">0%</span>
-            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; color: var(--text-muted);"><span>CONQUISTA GLOBAL</span><span id="lbl-global-pct">0%</span></div>
             <div class="prog-container"><div class="prog-fill bg-global" id="barra-global" style="width: 0%;"></div></div>
         </div>
 
         <section id="aba-financas">
             <div class="card">
-                <h3 style="margin-top:0; color: var(--fin-color);">Visão Financeira</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="margin:0; color: var(--fin-color);">Visão Financeira</h3>
+                    <input type="month" id="filtro-mes-fin" style="background: #18191c; border: 1px solid #33353b; color: white; padding: 4px 8px; border-radius: 8px; font-size: 12px;" onchange="recarregarTudo()">
+                </div>
                 <div class="vision-box" style="border-color: var(--fin-color);" id="educador-fin">Carregando propósito...</div>
                 
                 <div class="prog-container"><div class="prog-fill bg-fin" id="barra-fin" style="width: 0%;"></div></div>
-                <div style="font-size: 30px; font-weight: 800; text-align: center; margin: 15px 0;" id="lbl-saldo">R$ 0,00</div>
+                <div style="font-size: 36px; font-weight: 800; text-align: center; margin: 15px 0; transition: 0.3s;" id="lbl-saldo">R$ 0,00</div>
                 <p style="text-align: center; font-size: 13px; color: var(--text-muted); margin: 0;">Gastos do Mês: <span id="lbl-gastos">R$ 0,00</span></p>
-                <button class="btn btn-fin" onclick="abrirModal('modal-transacao')">+ Lançar Movimentação</button>
+                <button class="btn btn-fin" onclick="prepararNovaTransacao()">+ Lançar Movimentação</button>
             </div>
+
+            <div class="card">
+                <h3 style="margin-top:0;">Onde seu dinheiro vai?</h3>
+                <div style="position: relative; height: 220px; width: 100%; margin-bottom: 20px;">
+                    <canvas id="financeChart"></canvas>
+                </div>
+                
+                <h4 style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">HISTÓRICO DO MÊS <span id="lbl-filtro-categoria" style="color:var(--fin-color);"></span></h4>
+                <div id="lista-transacoes" style="max-height: 300px; overflow-y: auto;"></div>
+            </div>
+
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin:0;">Gastos Recorrentes</h3>
+                    <button class="btn-outline btn-small" onclick="abrirModal('modal-recorrente')">+ Adicionar</button>
+                </div>
+                <div id="lista-recorrentes"></div>
+            </div>
+
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <h3 style="margin:0;">Metas de Vida</h3>
-                    <button class="btn btn-outline" style="width: auto; padding: 6px 12px; margin:0; color:white; border-color: var(--fin-color);" onclick="abrirModal('modal-meta-fin')">+ Nova Meta</button>
+                    <button class="btn-outline btn-small" onclick="abrirModal('modal-meta-fin')">+ Nova Meta</button>
                 </div>
                 <div id="lista-metas-fin"></div>
             </div>
@@ -98,7 +124,7 @@
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h3 style="margin:0; color: var(--sau-color);">Saúde Física</h3>
-                    <button class="btn btn-outline" style="width: auto; padding: 6px 12px; margin:0; color:white; border-color: var(--sau-color);" onclick="abrirModal('modal-meta-saude')">Definir Sonho</button>
+                    <button class="btn-outline btn-small" onclick="abrirModal('modal-meta-saude')">Definir Sonho</button>
                 </div>
                 <div class="vision-box" style="border-color: var(--sau-color);" id="educador-sau">Defina sua meta física para liberar esta área.</div>
                 
@@ -107,9 +133,7 @@
                     <div style="font-size: 15px; font-weight: 800; color: white; margin-bottom: 4px;" id="lbl-peso-info">--</div>
                     <div style="font-size: 12px; font-weight: 800; color: var(--danger-color); margin-bottom: 8px;" id="lbl-peso-falta">--</div>
                     <div class="prog-container"><div class="prog-fill bg-sau" id="barra-peso" style="width: 0%;"></div></div>
-
                     <p style="font-size: 12px; font-weight:bold; margin: 15px 0 5px 0;">Foco Diário de Treino (<span id="lbl-cal-hoje">0</span> / <span id="lbl-cal-meta">0</span> kcal):</p>
-                    <p style="font-size: 11px; color: var(--text-muted); margin-top:-3px; font-style:italic;">Bata essa meta diária treinando para que o peso diminua!</p>
                     <div class="prog-container"><div class="prog-fill bg-sau" id="barra-calorias" style="width: 0%;"></div></div>
                 </div>
             </div>
@@ -125,10 +149,9 @@
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h3 style="margin:0; color: var(--pro-color);">Sua Rotina</h3>
-                    <button class="btn btn-outline" style="width: auto; padding: 6px 12px; margin:0; color:white; border-color: var(--pro-color);" onclick="abrirModal('modal-meta-prod')">Propósito</button>
+                    <button class="btn-outline btn-small" onclick="abrirModal('modal-meta-prod')">Propósito</button>
                 </div>
                 <div class="vision-box" style="border-color: var(--pro-color);" id="educador-prod">Por que você quer se organizar? Defina seu propósito.</div>
-                
                 <p style="font-size: 12px; font-weight:bold; margin: 5px 0;">Tarefas Concluídas na Semana:</p>
                 <div class="prog-container"><div class="prog-fill bg-pro" id="barra-pro" style="width: 0%; margin-bottom: 20px;"></div></div>
                 <div id="planner-semanal"></div>
@@ -143,48 +166,45 @@
     </div>
 </div>
 
-<div id="modal-meta-fin" class="modal-overlay escondido">
+<div id="modal-transacao" class="modal-overlay escondido">
     <div class="modal-content">
-        <h3>Qual o seu Sonho Financeiro?</h3>
-        <div class="form-group"><label>Título (Ex: Construção da Casa):</label><input type="text" id="meta-fin-titulo"></div>
-        <div class="form-group"><label>Detalhe bem seu sonho. Como se sentirá ao realizar?</label><textarea id="meta-fin-dream" rows="2" placeholder="Sinta a emoção..."></textarea></div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <div class="form-group"><label>Valor Total (R$):</label><input type="number" id="meta-fin-valor" placeholder="100000"></div>
-            <div class="form-group"><label>Já guardado (R$):</label><input type="number" id="meta-fin-atual" placeholder="0.00"></div>
+        <h3 id="transacao-modal-title">Nova Transação</h3>
+        <input type="hidden" id="fin-id">
+        <div class="form-group"><label>Data:</label><input type="date" id="fin-date"></div>
+        <div class="form-group"><label>Tipo:</label><select id="fin-type"><option value="expense">Despesa (Saída)</option><option value="income">Renda (Entrada)</option></select></div>
+        <div class="form-group"><label>Valor (R$):</label><input type="number" id="fin-amount" placeholder="0.00" step="0.01"></div>
+        <div class="form-group"><label>Descrição / Título:</label><input type="text" id="fin-desc" placeholder="Ex: Mercado Atacadão"></div>
+        <div class="form-group">
+            <label>Categoria:</label>
+            <select id="fin-category">
+                <option value="Moradia">Moradia</option><option value="Alimentação">Alimentação</option>
+                <option value="Transporte">Transporte</option><option value="Saúde">Saúde</option>
+                <option value="Educação">Educação</option><option value="Lazer">Lazer</option>
+                <option value="Esportes">Esportes</option><option value="Compras">Compras</option>
+                <option value="Assinaturas">Assinaturas/Streaming</option><option value="Outros">Outros</option>
+            </select>
         </div>
-        <div class="form-group"><label>Em quantos meses?</label><input type="number" id="meta-fin-meses" placeholder="12"></div>
-        <button class="btn btn-fin" onclick="salvarMetaFin()">Firmar Compromisso</button>
-        <button class="btn btn-outline" onclick="fecharModal('modal-meta-fin')">Cancelar</button>
+        <button class="btn btn-fin" onclick="salvarTransacao()">Salvar</button>
+        <button class="btn btn-outline" onclick="fecharModal('modal-transacao')">Cancelar</button>
     </div>
 </div>
 
-<div id="modal-meta-saude" class="modal-overlay escondido">
+<div id="modal-recorrente" class="modal-overlay escondido">
     <div class="modal-content">
-        <h3>Qual a sua Meta Física?</h3>
-        <div class="form-group"><label>Título (Ex: Shape do Verão):</label><input type="text" id="meta-sau-titulo"></div>
-        <div class="form-group"><label>Detalhe seu sonho. Por que isso é importante?</label><textarea id="meta-sau-dream" rows="2"></textarea></div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <div class="form-group"><label>Peso Atual (kg):</label><input type="number" id="meta-sau-atual"></div>
-            <div class="form-group"><label>Peso Alvo (kg):</label><input type="number" id="meta-sau-alvo"></div>
-        </div>
-        <div class="form-group"><label>Em quantos meses?</label><input type="number" id="meta-sau-meses"></div>
-        <button class="btn btn-sau" onclick="salvarMetaSaude()">Calcular Meta e Salvar</button>
-        <button class="btn btn-outline" onclick="fecharModal('modal-meta-saude')">Cancelar</button>
+        <h3>Novo Gasto Fixo/Recorrente</h3>
+        <p style="font-size:11px; color:var(--text-muted); margin-top:-10px;">Contas que vencem todo mês.</p>
+        <div class="form-group"><label>Descrição:</label><input type="text" id="rec-desc" placeholder="Ex: Faculdade"></div>
+        <div class="form-group"><label>Valor (R$):</label><input type="number" id="rec-amount" placeholder="0.00" step="0.01"></div>
+        <div class="form-group"><label>Dia do Vencimento:</label><input type="number" id="rec-day" placeholder="10" min="1" max="31"></div>
+        <div class="form-group"><label>Categoria:</label><select id="rec-category"><option value="Moradia">Moradia</option><option value="Educação">Educação</option><option value="Assinaturas">Assinaturas</option><option value="Outros">Outros</option></select></div>
+        <button class="btn btn-fin" onclick="salvarRecorrente()">Salvar Fixo</button>
+        <button class="btn btn-outline" onclick="fecharModal('modal-recorrente')">Cancelar</button>
     </div>
 </div>
 
-<div id="modal-meta-prod" class="modal-overlay escondido">
-    <div class="modal-content">
-        <h3>Qual o seu Propósito?</h3>
-        <div class="form-group"><label>Título (Ex: Passar no Concurso):</label><input type="text" id="meta-pro-titulo"></div>
-        <div class="form-group"><label>Por que organizar a rotina vai mudar sua vida?</label><textarea id="meta-pro-dream" rows="2"></textarea></div>
-        <div class="form-group"><label>Em quantos meses?</label><input type="number" id="meta-pro-meses"></div>
-        <button class="btn btn-pro" onclick="salvarMetaProd()">Salvar Propósito</button>
-        <button class="btn btn-outline" onclick="fecharModal('modal-meta-prod')">Cancelar</button>
-    </div>
-</div>
-
-<div id="modal-transacao" class="modal-overlay escondido"><div class="modal-content"><h3>Nova Transação</h3><div class="form-group"><label>Tipo:</label><select id="fin-type"><option value="expense">Despesa (Saída)</option><option value="income">Renda (Entrada)</option></select></div><div class="form-group"><label>Valor (R$):</label><input type="number" id="fin-amount"></div><div class="form-group"><label>Categoria:</label><input type="text" id="fin-category" value="Geral"></div><button class="btn btn-fin" onclick="salvarTransacao()">Salvar</button><button class="btn btn-outline" onclick="fecharModal('modal-transacao')">Cancelar</button></div></div>
+<div id="modal-meta-fin" class="modal-overlay escondido"><div class="modal-content"><h3>Qual o seu Sonho Financeiro?</h3><div class="form-group"><label>Título:</label><input type="text" id="meta-fin-titulo"></div><div class="form-group"><label>Detalhe bem seu sonho:</label><textarea id="meta-fin-dream" rows="2"></textarea></div><div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div class="form-group"><label>Valor Total (R$):</label><input type="number" id="meta-fin-valor"></div><div class="form-group"><label>Já guardado (R$):</label><input type="number" id="meta-fin-atual"></div></div><div class="form-group"><label>Em quantos meses?</label><input type="number" id="meta-fin-meses" placeholder="12"></div><button class="btn btn-fin" onclick="salvarMetaFin()">Firmar Compromisso</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-fin')">Cancelar</button></div></div>
+<div id="modal-meta-saude" class="modal-overlay escondido"><div class="modal-content"><h3>Qual a sua Meta Física?</h3><div class="form-group"><label>Título:</label><input type="text" id="meta-sau-titulo"></div><div class="form-group"><label>Detalhe seu sonho:</label><textarea id="meta-sau-dream" rows="2"></textarea></div><div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div class="form-group"><label>Peso Atual (kg):</label><input type="number" id="meta-sau-atual"></div><div class="form-group"><label>Peso Alvo (kg):</label><input type="number" id="meta-sau-alvo"></div></div><div class="form-group"><label>Em quantos meses?</label><input type="number" id="meta-sau-meses"></div><button class="btn btn-sau" onclick="salvarMetaSaude()">Calcular Meta e Salvar</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-saude')">Cancelar</button></div></div>
+<div id="modal-meta-prod" class="modal-overlay escondido"><div class="modal-content"><h3>Qual o seu Propósito?</h3><div class="form-group"><label>Título:</label><input type="text" id="meta-pro-titulo"></div><div class="form-group"><label>Por que quer organizar a rotina?</label><textarea id="meta-pro-dream" rows="2"></textarea></div><div class="form-group"><label>Em quantos meses?</label><input type="number" id="meta-pro-meses"></div><button class="btn btn-pro" onclick="salvarMetaProd()">Salvar Propósito</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-prod')">Cancelar</button></div></div>
 <div id="modal-aporte" class="modal-overlay escondido"><div class="modal-content"><h3>Guardar Dinheiro na Meta</h3><input type="hidden" id="aporte-meta-id"><div class="form-group"><label>Valor do Aporte (R$):</label><input type="number" id="aporte-valor"></div><button class="btn btn-fin" onclick="salvarAporte()">Aportar</button><button class="btn btn-outline" onclick="fecharModal('modal-aporte')">Cancelar</button></div></div>
 
 <script>

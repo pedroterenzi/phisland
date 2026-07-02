@@ -30,7 +30,7 @@
         .task-item { display: flex; justify-content: space-between; align-items: center; background: #18191c; padding: 10px; border-radius: 8px; margin-bottom: 6px; border: 1px solid #2a2c32; font-size: 13px;}
         .task-item.completed { opacity: 0.5; text-decoration: line-through; }
         .meta-card { background: #18191c; padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 10px; }
-        .vision-box { background: rgba(255,255,255,0.05); border-left: 3px solid var(--accent-color); padding: 12px; border-radius: 8px; margin-bottom: 15px; font-style: italic; font-size: 13px; color: #d4d4d8;}
+        .vision-box { background: rgba(255,255,255,0.05); border-left: 3px solid var(--accent-color); padding: 12px; border-radius: 8px; margin-bottom: 15px; font-style: italic; font-size: 13px; color: #d4d4d8; font-weight: 600; line-height: 1.5;}
         .nav-inferior { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); width: calc(100% - 30px); max-width: 470px; background: rgba(19, 20, 24, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px; border-radius: 20px; z-index: 100;}
         .nav-item { background: transparent; border: none; color: var(--text-muted); font-size: 12px; font-weight: 700; cursor: pointer; padding: 8px 12px; border-radius: 10px; }
         .escondido { display: none !important; }
@@ -88,7 +88,7 @@
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <h3 style="margin:0;">Metas de Vida</h3>
-                    <button class="btn btn-outline" style="width: auto; padding: 6px 12px; margin:0;" onclick="abrirModal('modal-meta-fin')">+ Nova Meta</button>
+                    <button class="btn btn-outline" style="width: auto; padding: 6px 12px; margin:0; color:white; border-color: var(--fin-color);" onclick="abrirModal('modal-meta-fin')">+ Nova Meta</button>
                 </div>
                 <div id="lista-metas-fin"></div>
             </div>
@@ -98,15 +98,18 @@
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h3 style="margin:0; color: var(--sau-color);">Saúde Física</h3>
-                    <button class="btn btn-outline" style="width: auto; padding: 6px 12px; margin:0;" onclick="abrirModal('modal-meta-saude')">Definir Sonho</button>
+                    <button class="btn btn-outline" style="width: auto; padding: 6px 12px; margin:0; color:white; border-color: var(--sau-color);" onclick="abrirModal('modal-meta-saude')">Definir Sonho</button>
                 </div>
                 <div class="vision-box" style="border-color: var(--sau-color);" id="educador-sau">Defina sua meta física para liberar esta área.</div>
                 
                 <div id="box-saude-dados" class="escondido">
-                    <p style="font-size: 12px; font-weight:bold; margin: 15px 0 5px 0;">Jornada de Peso:</p>
+                    <p style="font-size: 12px; font-weight:bold; margin: 15px 0 5px 0;">Jornada de Peso Atual:</p>
                     <div style="font-size: 15px; font-weight: 800; color: white; margin-bottom: 4px;" id="lbl-peso-info">--</div>
+                    <div style="font-size: 12px; font-weight: 800; color: var(--danger-color); margin-bottom: 8px;" id="lbl-peso-falta">--</div>
                     <div class="prog-container"><div class="prog-fill bg-sau" id="barra-peso" style="width: 0%;"></div></div>
+
                     <p style="font-size: 12px; font-weight:bold; margin: 15px 0 5px 0;">Foco Diário de Treino (<span id="lbl-cal-hoje">0</span> / <span id="lbl-cal-meta">0</span> kcal):</p>
+                    <p style="font-size: 11px; color: var(--text-muted); margin-top:-3px; font-style:italic;">Bata essa meta diária treinando para que o peso diminua!</p>
                     <div class="prog-container"><div class="prog-fill bg-sau" id="barra-calorias" style="width: 0%;"></div></div>
                 </div>
             </div>
@@ -122,7 +125,7 @@
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h3 style="margin:0; color: var(--pro-color);">Sua Rotina</h3>
-                    <button class="btn btn-outline" style="width: auto; padding: 6px 12px; margin:0;" onclick="abrirModal('modal-meta-prod')">Propósito</button>
+                    <button class="btn btn-outline" style="width: auto; padding: 6px 12px; margin:0; color:white; border-color: var(--pro-color);" onclick="abrirModal('modal-meta-prod')">Propósito</button>
                 </div>
                 <div class="vision-box" style="border-color: var(--pro-color);" id="educador-prod">Por que você quer se organizar? Defina seu propósito.</div>
                 
@@ -144,11 +147,12 @@
     <div class="modal-content">
         <h3>Qual o seu Sonho Financeiro?</h3>
         <div class="form-group"><label>Título (Ex: Construção da Casa):</label><input type="text" id="meta-fin-titulo"></div>
-        <div class="form-group"><label>Detalhe bem seu sonho. Como você se sentirá ao realizar?</label><textarea id="meta-fin-dream" rows="3"></textarea></div>
+        <div class="form-group"><label>Detalhe bem seu sonho. Como se sentirá ao realizar?</label><textarea id="meta-fin-dream" rows="2" placeholder="Sinta a emoção..."></textarea></div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <div class="form-group"><label>Valor (R$):</label><input type="number" id="meta-fin-valor"></div>
-            <div class="form-group"><label>Em quantos meses?</label><input type="number" id="meta-fin-meses"></div>
+            <div class="form-group"><label>Valor Total (R$):</label><input type="number" id="meta-fin-valor" placeholder="100000"></div>
+            <div class="form-group"><label>Já guardado (R$):</label><input type="number" id="meta-fin-atual" placeholder="0.00"></div>
         </div>
+        <div class="form-group"><label>Em quantos meses?</label><input type="number" id="meta-fin-meses" placeholder="12"></div>
         <button class="btn btn-fin" onclick="salvarMetaFin()">Firmar Compromisso</button>
         <button class="btn btn-outline" onclick="fecharModal('modal-meta-fin')">Cancelar</button>
     </div>
@@ -158,7 +162,7 @@
     <div class="modal-content">
         <h3>Qual a sua Meta Física?</h3>
         <div class="form-group"><label>Título (Ex: Shape do Verão):</label><input type="text" id="meta-sau-titulo"></div>
-        <div class="form-group"><label>Detalhe seu sonho. Por que isso é importante?</label><textarea id="meta-sau-dream" rows="3"></textarea></div>
+        <div class="form-group"><label>Detalhe seu sonho. Por que isso é importante?</label><textarea id="meta-sau-dream" rows="2"></textarea></div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;">
             <div class="form-group"><label>Peso Atual (kg):</label><input type="number" id="meta-sau-atual"></div>
             <div class="form-group"><label>Peso Alvo (kg):</label><input type="number" id="meta-sau-alvo"></div>
@@ -173,8 +177,8 @@
     <div class="modal-content">
         <h3>Qual o seu Propósito?</h3>
         <div class="form-group"><label>Título (Ex: Passar no Concurso):</label><input type="text" id="meta-pro-titulo"></div>
-        <div class="form-group"><label>Por que organizar sua rotina vai mudar sua vida?</label><textarea id="meta-pro-dream" rows="3"></textarea></div>
-        <div class="form-group"><label>Em quantos meses quer atingir isso?</label><input type="number" id="meta-pro-meses"></div>
+        <div class="form-group"><label>Por que organizar a rotina vai mudar sua vida?</label><textarea id="meta-pro-dream" rows="2"></textarea></div>
+        <div class="form-group"><label>Em quantos meses?</label><input type="number" id="meta-pro-meses"></div>
         <button class="btn btn-pro" onclick="salvarMetaProd()">Salvar Propósito</button>
         <button class="btn btn-outline" onclick="fecharModal('modal-meta-prod')">Cancelar</button>
     </div>
@@ -183,6 +187,9 @@
 <div id="modal-transacao" class="modal-overlay escondido"><div class="modal-content"><h3>Nova Transação</h3><div class="form-group"><label>Tipo:</label><select id="fin-type"><option value="expense">Despesa (Saída)</option><option value="income">Renda (Entrada)</option></select></div><div class="form-group"><label>Valor (R$):</label><input type="number" id="fin-amount"></div><div class="form-group"><label>Categoria:</label><input type="text" id="fin-category" value="Geral"></div><button class="btn btn-fin" onclick="salvarTransacao()">Salvar</button><button class="btn btn-outline" onclick="fecharModal('modal-transacao')">Cancelar</button></div></div>
 <div id="modal-aporte" class="modal-overlay escondido"><div class="modal-content"><h3>Guardar Dinheiro na Meta</h3><input type="hidden" id="aporte-meta-id"><div class="form-group"><label>Valor do Aporte (R$):</label><input type="number" id="aporte-valor"></div><button class="btn btn-fin" onclick="salvarAporte()">Aportar</button><button class="btn btn-outline" onclick="fecharModal('modal-aporte')">Cancelar</button></div></div>
 
-<script src="app.js?v=9"></script>
+<script>
+    const v = new Date().getTime(); 
+    document.write('<script src="app.js?v=' + v + '"><\/script>');
+</script>
 </body>
 </html>

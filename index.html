@@ -17,7 +17,6 @@
         .prog-fill { height: 100%; transition: width 0.5s ease; border-radius: 10px; }
         .bg-global { background: linear-gradient(90deg, var(--fin-color), var(--sau-color), var(--pro-color)); }
         .bg-fin { background: var(--fin-color); } .bg-sau { background: var(--sau-color); } .bg-pro { background: var(--pro-color); }
-        .bg-danger { background: var(--danger-color) !important; }
         
         .text-danger { color: var(--danger-color) !important; }
         .text-success { color: var(--success-color) !important; }
@@ -25,23 +24,22 @@
         .btn { width: 100%; padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; border: none; transition: 0.2s; margin-top: 10px; color: white;}
         .btn-fin { background: var(--fin-color); } .btn-sau { background: var(--sau-color); } .btn-pro { background: var(--pro-color); }
         .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); }
-        .btn-small { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; border: none; }
+        .btn-small { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center;}
         
         .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
         .form-group label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
         .form-group input, .form-group select, .form-group textarea { background: #18191c; border: 1px solid #33353b; padding: 12px; border-radius: 10px; color: white; font-size: 14px; width: 100%;}
         
         .toggle-auth { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #2a2c32; padding-bottom: 10px; }
-        .toggle-auth button { flex: 1; background: none; border: none; color: var(--text-muted); font-weight: 700; padding: 8px; cursor: pointer; }
+        .toggle-auth button { flex: 1; background: none; border: none; color: var(--text-muted); font-weight: 700; padding: 8px; cursor: pointer; border-bottom: 2px solid transparent; }
         .toggle-auth button.active { color: var(--fin-color); border-bottom: 2px solid var(--fin-color); }
         
-        /* Estilos do Histórico Financeiro */
         .history-item { background: #18191c; padding: 12px; border-radius: 12px; border: 1px solid #2a2c32; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;}
-        .history-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 16px; background: #27272a;}
-        .history-details { flex: 1; margin: 0 10px; }
-        .history-title { font-size: 14px; font-weight: bold; color: white; margin-bottom: 2px; }
+        .history-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; justify-content: center; align-items: center; background: #27272a; flex-shrink: 0;}
+        .history-details { flex: 1; margin: 0 10px; overflow: hidden; }
+        .history-title { font-size: 14px; font-weight: bold; color: white; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .history-sub { font-size: 11px; color: var(--text-muted); }
-        .history-amount { font-size: 14px; font-weight: 800; }
+        .history-amount { font-size: 14px; font-weight: 800; white-space: nowrap; }
         .history-actions { display: flex; gap: 5px; flex-direction: column;}
         
         .day-block { border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
@@ -51,11 +49,19 @@
         .task-item.completed { opacity: 0.5; text-decoration: line-through; }
         .meta-card { background: #18191c; padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 10px; }
         .vision-box { background: rgba(255,255,255,0.05); border-left: 3px solid var(--accent-color); padding: 12px; border-radius: 8px; margin-bottom: 15px; font-style: italic; font-size: 13px; color: #d4d4d8; font-weight: 600; line-height: 1.5;}
+        
         .nav-inferior { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); width: calc(100% - 30px); max-width: 470px; background: rgba(19, 20, 24, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px; border-radius: 20px; z-index: 100;}
         .nav-item { background: transparent; border: none; color: var(--text-muted); font-size: 12px; font-weight: 700; cursor: pointer; padding: 8px 12px; border-radius: 10px; }
+        
         .escondido { display: none !important; }
         .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 20px;}
         .modal-content { background: var(--card-bg); width: 100%; max-width: 400px; padding: 24px; border-radius: 20px; border: 1px solid #33353b; max-height: 90vh; overflow-y: auto;}
+
+        /* Estilo da Barra Central (Ponto Zero) */
+        .balance-bar-wrapper { position: relative; width: 100%; height: 10px; background: #27272a; border-radius: 10px; margin-top: 8px; overflow: hidden; }
+        .balance-bar-neg { position: absolute; right: 50%; height: 100%; background: var(--danger-color); transition: 0.4s ease; border-radius: 10px 0 0 10px; width: 0%; }
+        .balance-bar-pos { position: absolute; left: 50%; height: 100%; background: var(--success-color); transition: 0.4s ease; border-radius: 0 10px 10px 0; width: 0%; }
+        .balance-bar-zero { position: absolute; left: 50%; width: 2px; height: 100%; background: #fff; transform: translateX(-50%); z-index: 2; }
     </style>
 </head>
 <body>
@@ -71,36 +77,53 @@
     <div id="conteudo-app" class="escondido">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <h4 style="margin:0; color: var(--text-muted);">Bem-vindo(a), <span id="lbl-boas-vindas" style="color: white;">--</span></h4>
-            <button onclick="fazerLogout()" style="background: none; border: none; color: var(--danger-color); font-size: 11px; font-weight: bold; cursor: pointer;">🚪 SAIR</button>
-        </div>
-
-        <div class="card" style="padding: 15px; text-align: center;">
-            <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; color: var(--text-muted);"><span>CONQUISTA GLOBAL</span><span id="lbl-global-pct">0%</span></div>
-            <div class="prog-container"><div class="prog-fill bg-global" id="barra-global" style="width: 0%;"></div></div>
+            <button onclick="fazerLogout()" style="background: none; border: none; color: var(--danger-color); font-size: 11px; font-weight: bold; cursor: pointer;">SAIR</button>
         </div>
 
         <section id="aba-financas">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin:0;">🎯 Suas Metas de Vida</h3>
+                    <button class="btn-outline btn-small" style="color:white; border-color: var(--fin-color);" onclick="prepararNovaMetaFin()">+ Nova</button>
+                </div>
+                <div id="lista-metas-fin"></div>
+            </div>
+
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h3 style="margin:0; color: var(--fin-color);">Visão Financeira</h3>
                     <input type="month" id="filtro-mes-fin" style="background: #18191c; border: 1px solid #33353b; color: white; padding: 4px 8px; border-radius: 8px; font-size: 12px;" onchange="recarregarTudo()">
                 </div>
-                <div class="vision-box" style="border-color: var(--fin-color);" id="educador-fin">Carregando propósito...</div>
                 
-                <div class="prog-container"><div class="prog-fill bg-fin" id="barra-fin" style="width: 0%;"></div></div>
+                <div class="balance-bar-wrapper">
+                    <div class="balance-bar-neg" id="barra-fin-neg"></div>
+                    <div class="balance-bar-pos" id="barra-fin-pos"></div>
+                    <div class="balance-bar-zero"></div>
+                </div>
+
                 <div style="font-size: 36px; font-weight: 800; text-align: center; margin: 15px 0; transition: 0.3s;" id="lbl-saldo">R$ 0,00</div>
-                <p style="text-align: center; font-size: 13px; color: var(--text-muted); margin: 0;">Gastos do Mês: <span id="lbl-gastos">R$ 0,00</span></p>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin: 0 10px;">
+                    <span>Entradas: <span id="lbl-rendas" style="color: var(--success-color); font-weight: bold;">R$ 0,00</span></span>
+                    <span>Saídas: <span id="lbl-gastos" style="color: var(--danger-color); font-weight: bold;">R$ 0,00</span></span>
+                </div>
                 <button class="btn btn-fin" onclick="prepararNovaTransacao()">+ Lançar Movimentação</button>
             </div>
 
             <div class="card">
-                <h3 style="margin-top:0;">Onde seu dinheiro vai?</h3>
+                <h3 style="margin-top:0;">Onde seu dinheiro vai? (Saídas)</h3>
                 <div style="position: relative; height: 220px; width: 100%; margin-bottom: 20px;">
                     <canvas id="financeChart"></canvas>
                 </div>
                 
-                <h4 style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">HISTÓRICO DO MÊS <span id="lbl-filtro-categoria" style="color:var(--fin-color);"></span></h4>
-                <div id="lista-transacoes" style="max-height: 300px; overflow-y: auto;"></div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="font-size: 13px; color: var(--text-muted); margin: 0;">HISTÓRICO DO MÊS <span id="lbl-filtro-categoria" style="color:var(--fin-color);"></span></h4>
+                </div>
+                <div class="toggle-auth" style="margin-bottom: 10px;">
+                    <button id="tab-hist-all" class="active" style="border-color: var(--text-color); color: white;" onclick="setHistoryTab('all')">Tudo</button>
+                    <button id="tab-hist-income" onclick="setHistoryTab('income')">Entradas</button>
+                    <button id="tab-hist-expense" onclick="setHistoryTab('expense')">Saídas</button>
+                </div>
+                <div id="lista-transacoes" style="max-height: 350px; overflow-y: auto;"></div>
             </div>
 
             <div class="card">
@@ -110,21 +133,13 @@
                 </div>
                 <div id="lista-recorrentes"></div>
             </div>
-
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 style="margin:0;">Metas de Vida</h3>
-                    <button class="btn-outline btn-small" onclick="abrirModal('modal-meta-fin')">+ Nova Meta</button>
-                </div>
-                <div id="lista-metas-fin"></div>
-            </div>
         </section>
 
         <section id="aba-saude" class="escondido">
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h3 style="margin:0; color: var(--sau-color);">Saúde Física</h3>
-                    <button class="btn-outline btn-small" onclick="abrirModal('modal-meta-saude')">Definir Sonho</button>
+                    <button class="btn-outline btn-small" style="color:white; border-color: var(--sau-color);" onclick="abrirModal('modal-meta-saude')">Definir Sonho</button>
                 </div>
                 <div class="vision-box" style="border-color: var(--sau-color);" id="educador-sau">Defina sua meta física para liberar esta área.</div>
                 
@@ -149,7 +164,7 @@
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h3 style="margin:0; color: var(--pro-color);">Sua Rotina</h3>
-                    <button class="btn-outline btn-small" onclick="abrirModal('modal-meta-prod')">Propósito</button>
+                    <button class="btn-outline btn-small" style="color:white; border-color: var(--pro-color);" onclick="abrirModal('modal-meta-prod')">Propósito</button>
                 </div>
                 <div class="vision-box" style="border-color: var(--pro-color);" id="educador-prod">Por que você quer se organizar? Defina seu propósito.</div>
                 <p style="font-size: 12px; font-weight:bold; margin: 5px 0;">Tarefas Concluídas na Semana:</p>
@@ -171,38 +186,43 @@
         <h3 id="transacao-modal-title">Nova Transação</h3>
         <input type="hidden" id="fin-id">
         <div class="form-group"><label>Data:</label><input type="date" id="fin-date"></div>
-        <div class="form-group"><label>Tipo:</label><select id="fin-type"><option value="expense">Despesa (Saída)</option><option value="income">Renda (Entrada)</option></select></div>
+        <div class="form-group">
+            <label>Tipo de Lançamento:</label>
+            <select id="fin-type" onchange="atualizarCategoriasSelect()">
+                <option value="expense">Despesa (Saída)</option>
+                <option value="income">Renda (Entrada)</option>
+            </select>
+        </div>
         <div class="form-group"><label>Valor (R$):</label><input type="number" id="fin-amount" placeholder="0.00" step="0.01"></div>
-        <div class="form-group"><label>Descrição / Título:</label><input type="text" id="fin-desc" placeholder="Ex: Mercado Atacadão"></div>
+        <div class="form-group"><label>Descrição do Lançamento:</label><input type="text" id="fin-desc" placeholder="Ex: Mercado Atacadão"></div>
         <div class="form-group">
             <label>Categoria:</label>
             <select id="fin-category">
-                <option value="Moradia">Moradia</option><option value="Alimentação">Alimentação</option>
-                <option value="Transporte">Transporte</option><option value="Saúde">Saúde</option>
-                <option value="Educação">Educação</option><option value="Lazer">Lazer</option>
-                <option value="Esportes">Esportes</option><option value="Compras">Compras</option>
-                <option value="Assinaturas">Assinaturas/Streaming</option><option value="Outros">Outros</option>
-            </select>
+                </select>
         </div>
         <button class="btn btn-fin" onclick="salvarTransacao()">Salvar</button>
         <button class="btn btn-outline" onclick="fecharModal('modal-transacao')">Cancelar</button>
     </div>
 </div>
 
-<div id="modal-recorrente" class="modal-overlay escondido">
+<div id="modal-recorrente" class="modal-overlay escondido"><div class="modal-content"><h3>Novo Gasto Fixo</h3><div class="form-group"><label>Descrição:</label><input type="text" id="rec-desc"></div><div class="form-group"><label>Valor (R$):</label><input type="number" id="rec-amount" step="0.01"></div><div class="form-group"><label>Dia do Vencimento:</label><input type="number" id="rec-day" min="1" max="31"></div><div class="form-group"><label>Categoria:</label><select id="rec-category"><option value="Moradia">Moradia</option><option value="Educação">Educação</option><option value="Assinaturas">Assinaturas</option><option value="Outros">Outros</option></select></div><button class="btn btn-fin" onclick="salvarRecorrente()">Salvar Fixo</button><button class="btn btn-outline" onclick="fecharModal('modal-recorrente')">Cancelar</button></div></div>
+
+<div id="modal-meta-fin" class="modal-overlay escondido">
     <div class="modal-content">
-        <h3>Novo Gasto Fixo/Recorrente</h3>
-        <p style="font-size:11px; color:var(--text-muted); margin-top:-10px;">Contas que vencem todo mês.</p>
-        <div class="form-group"><label>Descrição:</label><input type="text" id="rec-desc" placeholder="Ex: Faculdade"></div>
-        <div class="form-group"><label>Valor (R$):</label><input type="number" id="rec-amount" placeholder="0.00" step="0.01"></div>
-        <div class="form-group"><label>Dia do Vencimento:</label><input type="number" id="rec-day" placeholder="10" min="1" max="31"></div>
-        <div class="form-group"><label>Categoria:</label><select id="rec-category"><option value="Moradia">Moradia</option><option value="Educação">Educação</option><option value="Assinaturas">Assinaturas</option><option value="Outros">Outros</option></select></div>
-        <button class="btn btn-fin" onclick="salvarRecorrente()">Salvar Fixo</button>
-        <button class="btn btn-outline" onclick="fecharModal('modal-recorrente')">Cancelar</button>
+        <h3 id="meta-fin-modal-title">Sua Meta Financeira</h3>
+        <input type="hidden" id="meta-fin-id">
+        <div class="form-group"><label>Título (Ex: Construção da Casa):</label><input type="text" id="meta-fin-titulo"></div>
+        <div class="form-group"><label>Detalhe bem seu sonho. Sinta a emoção:</label><textarea id="meta-fin-dream" rows="2"></textarea></div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div class="form-group"><label>Valor Total (R$):</label><input type="number" id="meta-fin-valor"></div>
+            <div class="form-group"><label>Já guardado (R$):</label><input type="number" id="meta-fin-atual"></div>
+        </div>
+        <div class="form-group"><label>Em quantos meses?</label><input type="number" id="meta-fin-meses" placeholder="12"></div>
+        <button class="btn btn-fin" onclick="salvarMetaFin()">Firmar Compromisso</button>
+        <button class="btn btn-outline" onclick="fecharModal('modal-meta-fin')">Cancelar</button>
     </div>
 </div>
 
-<div id="modal-meta-fin" class="modal-overlay escondido"><div class="modal-content"><h3>Qual o seu Sonho Financeiro?</h3><div class="form-group"><label>Título:</label><input type="text" id="meta-fin-titulo"></div><div class="form-group"><label>Detalhe bem seu sonho:</label><textarea id="meta-fin-dream" rows="2"></textarea></div><div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div class="form-group"><label>Valor Total (R$):</label><input type="number" id="meta-fin-valor"></div><div class="form-group"><label>Já guardado (R$):</label><input type="number" id="meta-fin-atual"></div></div><div class="form-group"><label>Em quantos meses?</label><input type="number" id="meta-fin-meses" placeholder="12"></div><button class="btn btn-fin" onclick="salvarMetaFin()">Firmar Compromisso</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-fin')">Cancelar</button></div></div>
 <div id="modal-meta-saude" class="modal-overlay escondido"><div class="modal-content"><h3>Qual a sua Meta Física?</h3><div class="form-group"><label>Título:</label><input type="text" id="meta-sau-titulo"></div><div class="form-group"><label>Detalhe seu sonho:</label><textarea id="meta-sau-dream" rows="2"></textarea></div><div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div class="form-group"><label>Peso Atual (kg):</label><input type="number" id="meta-sau-atual"></div><div class="form-group"><label>Peso Alvo (kg):</label><input type="number" id="meta-sau-alvo"></div></div><div class="form-group"><label>Em quantos meses?</label><input type="number" id="meta-sau-meses"></div><button class="btn btn-sau" onclick="salvarMetaSaude()">Calcular Meta e Salvar</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-saude')">Cancelar</button></div></div>
 <div id="modal-meta-prod" class="modal-overlay escondido"><div class="modal-content"><h3>Qual o seu Propósito?</h3><div class="form-group"><label>Título:</label><input type="text" id="meta-pro-titulo"></div><div class="form-group"><label>Por que quer organizar a rotina?</label><textarea id="meta-pro-dream" rows="2"></textarea></div><div class="form-group"><label>Em quantos meses?</label><input type="number" id="meta-pro-meses"></div><button class="btn btn-pro" onclick="salvarMetaProd()">Salvar Propósito</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-prod')">Cancelar</button></div></div>
 <div id="modal-aporte" class="modal-overlay escondido"><div class="modal-content"><h3>Guardar Dinheiro na Meta</h3><input type="hidden" id="aporte-meta-id"><div class="form-group"><label>Valor do Aporte (R$):</label><input type="number" id="aporte-valor"></div><button class="btn btn-fin" onclick="salvarAporte()">Aportar</button><button class="btn btn-outline" onclick="fecharModal('modal-aporte')">Cancelar</button></div></div>

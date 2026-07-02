@@ -17,6 +17,7 @@
         .prog-fill { height: 100%; transition: width 0.5s ease; border-radius: 10px; }
         .bg-global { background: linear-gradient(90deg, var(--fin-color), var(--sau-color), var(--pro-color)); }
         .bg-fin { background: var(--fin-color); } .bg-sau { background: var(--sau-color); } .bg-pro { background: var(--pro-color); }
+        .bg-danger { background: var(--danger-color) !important; }
         
         .text-danger { color: var(--danger-color) !important; }
         .text-success { color: var(--success-color) !important; }
@@ -123,7 +124,7 @@
                     <button id="tab-hist-income" onclick="setHistoryTab('income')">Entradas</button>
                     <button id="tab-hist-expense" onclick="setHistoryTab('expense')">Saídas</button>
                 </div>
-                <div id="lista-transacoes" style="max-height: 350px; overflow-y: auto;"></div>
+                <div id="lista-transacoes" style="max-height: 350px; overflow-y: auto; padding-right: 5px;"></div>
             </div>
 
             <div class="card">
@@ -194,12 +195,8 @@
             </select>
         </div>
         <div class="form-group"><label>Valor (R$):</label><input type="number" id="fin-amount" placeholder="0.00" step="0.01"></div>
-        <div class="form-group"><label>Descrição do Lançamento:</label><input type="text" id="fin-desc" placeholder="Ex: Mercado Atacadão"></div>
-        <div class="form-group">
-            <label>Categoria:</label>
-            <select id="fin-category">
-                </select>
-        </div>
+        <div class="form-group"><label>Descrição / Origem (Ex: Salário, Mercado):</label><input type="text" id="fin-desc"></div>
+        <div class="form-group"><label>Categoria:</label><select id="fin-category"></select></div>
         <button class="btn btn-fin" onclick="salvarTransacao()">Salvar</button>
         <button class="btn btn-outline" onclick="fecharModal('modal-transacao')">Cancelar</button>
     </div>
@@ -223,9 +220,21 @@
     </div>
 </div>
 
+<div id="modal-meta-tx" class="modal-overlay escondido">
+    <div class="modal-content">
+        <h3>Movimentar Sonho</h3>
+        <input type="hidden" id="meta-tx-id">
+        <div class="form-group"><label>Ação:</label><select id="meta-tx-type"><option value="deposit">Aporte (+ Guardar)</option><option value="withdrawal">Retirada (- Sacar)</option></select></div>
+        <div class="form-group"><label>Data:</label><input type="date" id="meta-tx-date"></div>
+        <div class="form-group"><label>Valor (R$):</label><input type="number" id="meta-tx-amount" step="0.01"></div>
+        <div class="form-group"><label>Origem / Motivo da retirada:</label><input type="text" id="meta-tx-desc" placeholder="Ex: Sobra do Mês, Imprevisto médico"></div>
+        <button class="btn btn-fin" onclick="salvarTransacaoMeta()">Lançar na Meta</button>
+        <button class="btn btn-outline" onclick="fecharModal('modal-meta-tx')">Cancelar</button>
+    </div>
+</div>
+
 <div id="modal-meta-saude" class="modal-overlay escondido"><div class="modal-content"><h3>Qual a sua Meta Física?</h3><div class="form-group"><label>Título:</label><input type="text" id="meta-sau-titulo"></div><div class="form-group"><label>Detalhe seu sonho:</label><textarea id="meta-sau-dream" rows="2"></textarea></div><div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div class="form-group"><label>Peso Atual (kg):</label><input type="number" id="meta-sau-atual"></div><div class="form-group"><label>Peso Alvo (kg):</label><input type="number" id="meta-sau-alvo"></div></div><div class="form-group"><label>Em quantos meses?</label><input type="number" id="meta-sau-meses"></div><button class="btn btn-sau" onclick="salvarMetaSaude()">Calcular Meta e Salvar</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-saude')">Cancelar</button></div></div>
 <div id="modal-meta-prod" class="modal-overlay escondido"><div class="modal-content"><h3>Qual o seu Propósito?</h3><div class="form-group"><label>Título:</label><input type="text" id="meta-pro-titulo"></div><div class="form-group"><label>Por que quer organizar a rotina?</label><textarea id="meta-pro-dream" rows="2"></textarea></div><div class="form-group"><label>Em quantos meses?</label><input type="number" id="meta-pro-meses"></div><button class="btn btn-pro" onclick="salvarMetaProd()">Salvar Propósito</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-prod')">Cancelar</button></div></div>
-<div id="modal-aporte" class="modal-overlay escondido"><div class="modal-content"><h3>Guardar Dinheiro na Meta</h3><input type="hidden" id="aporte-meta-id"><div class="form-group"><label>Valor do Aporte (R$):</label><input type="number" id="aporte-valor"></div><button class="btn btn-fin" onclick="salvarAporte()">Aportar</button><button class="btn btn-outline" onclick="fecharModal('modal-aporte')">Cancelar</button></div></div>
 
 <script>
     const v = new Date().getTime(); 

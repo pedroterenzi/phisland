@@ -38,27 +38,46 @@ async function executarCadastro() {
         password: document.getElementById('cad-pass').value
     };
     if(!obj.login || !obj.password) return alert("Preencha login e senha.");
-    const res = await fetch(`${API_URL}/auth/signup`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) });
-    if(res.ok) {
-        const user = await res.json();
-        localStorage.setItem("user_id", user.user_id);
-        localStorage.setItem("user_nickname", user.nickname);
-        window.location.reload();
-    } else { alert("Erro ao cadastrar."); }
+    
+    try {
+        const res = await fetch(`${API_URL}/auth/signup`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) });
+        if(res.ok) {
+            const user = await res.json();
+            localStorage.setItem("user_id", user.user_id);
+            localStorage.setItem("user_nickname", user.nickname);
+            window.location.reload();
+        } else { 
+            alert("Erro ao cadastrar."); 
+        }
+    } catch(e) {
+        alert("Servidor indisponível. Aguarde um minuto.");
+    }
 }
 
 async function executarLogin() {
-    const obj = { login: document.getElementById('login-user').value.trim(), password: document.getElementById('login-pass').value };
-    const res = await fetch(`${API_URL}/auth/login`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) });
-    if(res.ok) {
-        const user = await res.json();
-        localStorage.setItem("user_id", user.id);
-        localStorage.setItem("user_nickname", user.nickname);
-        window.location.reload();
-    } else { alert("Login inválido."); }
+    const obj = { 
+        login: document.getElementById('login-user').value.trim(), 
+        password: document.getElementById('login-pass').value 
+    };
+    try {
+        const res = await fetch(`${API_URL}/auth/login`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) });
+        if(res.ok) {
+            const user = await res.json();
+            localStorage.setItem("user_id", user.id);
+            localStorage.setItem("user_nickname", user.nickname);
+            window.location.reload();
+        } else { 
+            alert("Login ou senha inválidos."); 
+        }
+    } catch(e) {
+        alert("Erro no servidor.");
+    }
 }
 
-function fazerLogout() { localStorage.clear(); window.location.reload(); }
+function fazerLogout() { 
+    localStorage.clear(); 
+    window.location.reload(); 
+}
 
 function navegar(aba) {
     document.querySelectorAll('section').forEach(s => s.classList.add('escondido'));
@@ -72,13 +91,14 @@ function navegar(aba) {
         if(aba === 'produtividade') btn.style.color = "var(--pro-color)";
     }
 }
+
 function abrirModal(id) { document.getElementById(id).classList.remove('escondido'); }
 function fecharModal(id) { document.getElementById(id).classList.add('escondido'); }
 
-// --- REATIVIDADE ---
 async function recarregarTudo() {
     const user_id = localStorage.getItem("user_id");
     if(!user_id) return;
+    
     carregarPlannerSemanal_Visual(user_id);
 
     try {
@@ -89,14 +109,12 @@ async function recarregarTudo() {
         document.getElementById('lbl-global-pct').innerText = `${data.global_pct.toFixed(0)}%`;
         document.getElementById('barra-global').style.width = `${data.global_pct}%`;
         
-        // FINANÇAS
         document.getElementById('lbl-saldo').innerText = `R$ ${data.financas.saldo.toFixed(2)}`;
         document.getElementById('lbl-gastos').innerText = `R$ ${data.financas.gastos.toFixed(2)}`;
         document.getElementById('barra-fin').style.width = `${data.financas.progresso}%`;
         document.getElementById('educador-fin').innerText = data.financas.msg_educador;
         renderizarMetasFinanceiras(data.financas.metas);
         
-        // SAÚDE
         if(data.saude.meta) {
             document.getElementById('box-saude-dados').classList.remove('escondido');
             const m = data.saude.meta;
@@ -109,20 +127,19 @@ async function recarregarTudo() {
             document.getElementById('lbl-cal-hoje').innerText = data.saude.calorias_hoje.toFixed(0);
         }
         
-        // PRODUTIVIDADE
         document.getElementById('barra-pro').style.width = `${data.produtividade.progresso}%`;
         if(data.produtividade.meta) {
             document.getElementById('educador-prod').innerText = `Motivação: "${data.produtividade.meta.dream}"`;
         }
         
-    } catch (e) { console.error("Erro recarregamento:", e); }
+    } catch (e) { 
+        console.error("Aviso do banco:", e); 
+    }
 }
 
-// --- METAS PROFUNDAS (SONHOS) ---
 async function salvarMetaFin() {
-    const uid = localStorage.getItem("user_id");
     const obj = {
-        user_id: parseInt(uid),
+        user_id: parseInt(localStorage.getItem("user_id")),
         title: document.getElementById('meta-fin-titulo').value,
         dream: document.getElementById('meta-fin-dream').value,
         target_amount: parseFloat(document.getElementById('meta-fin-valor').value),
@@ -133,9 +150,8 @@ async function salvarMetaFin() {
 }
 
 async function salvarMetaSaude() {
-    const uid = localStorage.getItem("user_id");
     const obj = {
-        user_id: parseInt(uid),
+        user_id: parseInt(localStorage.getItem("user_id")),
         title: document.getElementById('meta-sau-titulo').value,
         dream: document.getElementById('meta-sau-dream').value,
         current_weight: parseFloat(document.getElementById('meta-sau-atual').value),
@@ -147,9 +163,8 @@ async function salvarMetaSaude() {
 }
 
 async function salvarMetaProd() {
-    const uid = localStorage.getItem("user_id");
     const obj = {
-        user_id: parseInt(uid),
+        user_id: parseInt(localStorage.getItem("user_id")),
         title: document.getElementById('meta-pro-titulo').value,
         dream: document.getElementById('meta-pro-dream').value,
         months: parseInt(document.getElementById('meta-pro-meses').value)
@@ -158,9 +173,14 @@ async function salvarMetaProd() {
     fecharModal('modal-meta-prod'); recarregarTudo();
 }
 
-// --- LÓGICA EXISTENTE ---
 async function salvarTransacao() {
-    const obj = { user_id: parseInt(localStorage.getItem("user_id")), type: document.getElementById('fin-type').value, amount: parseFloat(document.getElementById('fin-amount').value), category: document.getElementById('fin-category').value, date: hojeStr };
+    const obj = { 
+        user_id: parseInt(localStorage.getItem("user_id")), 
+        type: document.getElementById('fin-type').value, 
+        amount: parseFloat(document.getElementById('fin-amount').value), 
+        category: document.getElementById('fin-category').value, 
+        date: hojeStr 
+    };
     await fetch(`${API_URL}/transactions`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) });
     fecharModal('modal-transacao'); recarregarTudo();
 }
@@ -172,7 +192,9 @@ function renderizarMetasFinanceiras(metas) {
         c.innerHTML += `<div class="meta-card"><div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold;"><span>🎯 ${m.title}</span><span>${pct.toFixed(0)}%</span></div><div class="prog-container" style="height:6px; margin: 8px 0;"><div class="prog-fill bg-fin" style="width: ${pct}%;"></div></div><div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:11px; color:var(--text-muted);">R$ ${m.current_amount} de R$ ${m.target_amount}</span><button class="btn-outline" style="padding:4px 8px; border-radius:6px; font-size:11px; color:white;" onclick="prepararAporte(${m.id})">+ Guardar</button></div></div>`;
     });
 }
+
 function prepararAporte(id) { document.getElementById('aporte-meta-id').value = id; abrirModal('modal-aporte'); }
+
 async function salvarAporte() {
     await fetch(`${API_URL}/financial_goals/${document.getElementById('aporte-meta-id').value}/add`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({amount: parseFloat(document.getElementById('aporte-valor').value)}) });
     fecharModal('modal-aporte'); recarregarTudo();
@@ -182,6 +204,7 @@ async function carregarCatalogoExercicios() {
     const res = await fetch(`${API_URL}/exercises`);
     if(res.ok) { const d = await res.json(); document.getElementById('saude-exercicio').innerHTML = d.map(e => `<option value="${e.id}">${e.name}</option>`).join(''); }
 }
+
 async function salvarTreino() {
     await fetch(`${API_URL}/workouts`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ user_id: parseInt(localStorage.getItem("user_id")), exercise_id: parseInt(document.getElementById('saude-exercicio').value), duration_minutes: parseInt(document.getElementById('saude-tempo').value), date: hojeStr }) });
     recarregarTudo();
@@ -192,15 +215,21 @@ async function carregarPlannerSemanal_Visual(user_id) {
     let tarefas = [];
     try { const res = await fetch(`${API_URL}/tasks/week?user_id=${user_id}&start=${startStr}&end=${endStr}`); if(res.ok) tarefas = await res.json(); } catch(e){}
     c.innerHTML = ""; const dias = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+    
     for(let i=0; i<7; i++) {
         let d = new Date(startOfWeek); d.setDate(startOfWeek.getDate() + i); let loopStr = d.toISOString().split('T')[0];
         let h = tarefas.filter(t => t.date === loopStr).map(t => `<div class="task-item" onclick="toggleTarefa(${t.id})" style="background:#111215; padding:10px; border-radius:8px; margin-bottom:6px; border:1px solid #2a2c32; display:flex; align-items:center; gap:10px;"><div style="width:16px; height:16px; border-radius:4px; border:2px solid ${t.is_completed?'gray':'var(--pro-color)'}; background:${t.is_completed?'gray':'transparent'};"></div><span style="${t.is_completed?'text-decoration:line-through; color:gray;':''}">${t.title}</span></div>`).join('');
         c.innerHTML += `<div class="day-block" style="background:#18191c; border:1px solid ${loopStr===hojeStr?'var(--pro-color)':'var(--border-color)'};"><div class="day-header" style="padding:10px 15px; display:flex; justify-content:space-between; align-items:center;"><div><span style="font-size:10px; font-weight:800; color:var(--text-muted);">${dias[d.getDay()]}</span><br><strong>${d.getDate()}</strong></div><button class="btn-outline" style="width:auto; margin:0; padding:4px 8px; font-size:11px;" onclick="addTarefaNoDia('${loopStr}')">+ Add</button></div><div style="padding:10px;">${h || '<span style="font-size:11px; color:var(--text-muted);">Livre</span>'}</div></div>`;
     }
 }
+
 async function addTarefaNoDia(dt) {
     const t = prompt("Nova tarefa:"); if(!t) return;
     await fetch(`${API_URL}/tasks`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({user_id: parseInt(localStorage.getItem("user_id")), title: t, date: dt}) });
     recarregarTudo();
 }
-async function toggleTarefa(id) { await fetch(`${API_URL}/tasks/${id}/toggle`, { method: 'PATCH' }); recarregarTudo(); }
+
+async function toggleTarefa(id) { 
+    await fetch(`${API_URL}/tasks/${id}/toggle`, { method: 'PATCH' }); 
+    recarregarTudo(); 
+}

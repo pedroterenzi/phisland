@@ -22,7 +22,12 @@ def inicializar_banco():
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         
-        # 1. USUÁRIOS (Simplificado)
+        # 🚨 RESET DE FÁBRICA PARA TESTES MVP (Garante a arquitetura nova)
+        tabelas_antigas = ["transactions", "financial_goals", "health_goals", "workout_logs", "productivity_goals", "tasks", "exercises", "users"]
+        for tabela in tabelas_antigas:
+            cursor.execute(f"DROP TABLE IF EXISTS {tabela} CASCADE;")
+        
+        # 1. USUÁRIOS
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY, name VARCHAR(255), nickname VARCHAR(100), login VARCHAR(100) UNIQUE, password VARCHAR(100)
@@ -76,17 +81,17 @@ def inicializar_banco():
             );
         """)
         
-        cursor.execute("SELECT COUNT(*) FROM exercises;")
-        if cursor.fetchone()[0] == 0:
-            cursor.execute("INSERT INTO exercises (name, muscle_group, calories_per_minute) VALUES ('Musculação', 'Geral', 6.0), ('Corrida', 'Cardio', 11.0);")
+        cursor.execute("INSERT INTO exercises (name, muscle_group, calories_per_minute) VALUES ('Musculação', 'Geral', 6.0), ('Corrida', 'Cardio', 11.0);")
             
-        conn.commit(); cursor.close(); conn.close()
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print("⚡ Banco de Dados Resetado e Sincronizado!")
     except Exception as e:
         print(f"Erro BD: {str(e)}")
 
 inicializar_banco()
 
-# --- MODELOS ---
 class ModeloCadastro(BaseModel): name: str; nickname: str; login: str; password: str
 class ModeloLogin(BaseModel): login: str; password: str
 class ModeloTransacao(BaseModel): user_id: int; type: str; amount: float; category: str; date: str
@@ -97,7 +102,6 @@ class ModeloMetaProd(BaseModel): user_id: int; title: str; dream: str; months: i
 class ModeloTreino(BaseModel): user_id: int; exercise_id: int; duration_minutes: int; date: str
 class ModeloTarefa(BaseModel): user_id: int; title: str; date: str
 
-# --- AUTENTICAÇÃO ---
 @app.post("/auth/signup")
 def cadastrar_usuario(obj: ModeloCadastro):
     try:
@@ -119,7 +123,6 @@ def logar_usuario(obj: ModeloLogin):
     if user: return user
     raise HTTPException(status_code=401, detail="Credenciais inválidas.")
 
-# --- ENDPOINTS METAS ---
 @app.post("/goals/finance")
 def criar_meta_fin(obj: ModeloMetaFin):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
@@ -155,7 +158,6 @@ def criar_meta_prod(obj: ModeloMetaProd):
     conn.commit(); cursor.close(); conn.close()
     return {"status": "ok"}
 
-# --- TRANSAÇÕES, TREINOS E TAREFAS (Igual versão anterior) ---
 @app.post("/transactions")
 def salvar_transacao(obj: ModeloTransacao):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
@@ -200,12 +202,10 @@ def alternar_tarefa(id: int):
     conn.commit(); cursor.close(); conn.close()
     return {"status": "ok"}
 
-# --- DASHBOARD UNIFICADO COM EDUCADOR BASEADO NO SONHO ---
 @app.get("/dashboard/unificado")
 def dashboard_unificado(user_id: int, date: str, start_week: str, end_week: str):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor(cursor_factory=RealDictCursor)
     
-    # Busca Metas Ativas para compor o painel de Sonhos
     cursor.execute("SELECT * FROM financial_goals WHERE user_id = %s ORDER BY id DESC;", (user_id,))
     metas_fin = cursor.fetchall()
     
@@ -215,17 +215,14 @@ def dashboard_unificado(user_id: int, date: str, start_week: str, end_week: str)
     cursor.execute("SELECT * FROM productivity_goals WHERE user_id = %s ORDER BY id DESC LIMIT 1;", (user_id,))
     meta_prod = cursor.fetchone()
 
-    # Movimentações Finanças
     cursor.execute("SELECT * FROM transactions WHERE user_id = %s AND date LIKE %s;", (user_id, date[:7]+'%'))
     transacoes = cursor.fetchall()
     total_income = sum(t['amount'] for t in transacoes if t['type'] == 'income')
     total_expense = sum(t['amount'] for t in transacoes if t['type'] == 'expense')
     
-    # Calorias Saúde
     cursor.execute("SELECT COALESCE(SUM(calories_burned), 0) FROM workout_logs WHERE user_id = %s AND date = %s;", (user_id, date))
     cal_hoje = float(cursor.fetchone()[0])
     
-    # Produtividade
     cursor.execute("SELECT COUNT(*) FROM tasks WHERE user_id = %s AND date >= %s AND date <= %s;", (user_id, start_week, end_week))
     total_tasks = cursor.fetchone()['count']
     cursor.execute("SELECT COUNT(*) FROM tasks WHERE user_id = %s AND date >= %s AND date <= %s AND is_completed = TRUE;", (user_id, start_week, end_week))
@@ -238,7 +235,6 @@ def dashboard_unificado(user_id: int, date: str, start_week: str, end_week: str)
     prog_produtividade = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
     engajamento_global = (prog_financas + prog_saude + prog_produtividade) / 3.0
 
-    # Lógica do Educador Emocional
     educador_fin = f"Lembre-se do seu sonho: {metas_fin[0]['dream']}. Mantenha o controle!" if metas_fin else "Defina uma meta para acompanhar seus gastos."
     
     return {

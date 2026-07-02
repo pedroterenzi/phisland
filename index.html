@@ -3,126 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MVP Desenvolvimento Pessoal</title>
+    <title>MVP Dev Pessoal</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #09090b;
-            --card-bg: #131418;
-            --accent-color: #3b82f6;
-            --text-color: #f4f4f5;
-            --text-muted: #a1a1aa;
-            --border-color: #27272a;
-            --success-color: #10b981;
-            --danger-color: #ef4444;
+            --bg-color: #09090b; --card-bg: #131418; --text-color: #f4f4f5; --text-muted: #a1a1aa;
+            --border-color: #27272a; --fin-color: #3b82f6; --sau-color: #10b981; --pro-color: #8b5cf6;
         }
-
         * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-color); margin: 0; display: flex; justify-content: center; padding-bottom: 100px; }
-        .app-container { width: 100%; max-width: 500px; padding: 20px; }
+        .app-container { width: 100%; max-width: 500px; padding: 15px; }
         
-        .card { background: linear-gradient(145deg, #16171a 0%, #111215 100%); border: 1px solid var(--border-color); padding: 20px; border-radius: 20px; margin-bottom: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+        .card { background: linear-gradient(145deg, #16171a 0%, #111215 100%); border: 1px solid var(--border-color); padding: 20px; border-radius: 20px; margin-bottom: 15px; }
         
-        /* Barra de Progresso Global Unificada */
-        .global-bar-container { background: #18191c; border: 1px solid var(--border-color); padding: 16px; border-radius: 16px; margin-bottom: 20px; text-align: center; }
-        .progress-bg { width: 100%; background: #27272a; height: 12px; border-radius: 10px; margin-top: 8px; overflow: hidden; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, #3b82f6, #10b981); width: 0%; transition: width 0.5s; }
-        
-        .btn { width: 100%; padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; border: none; transition: 0.2s; margin-top: 10px; }
-        .btn-primary { background: var(--accent-color); color: white; }
-        .btn-secondary { background: #27272a; color: white; border: 1px solid #33353b; }
+        /* Sistema de Barras de Progresso */
+        .prog-container { width: 100%; background: #27272a; height: 10px; border-radius: 10px; margin-top: 8px; overflow: hidden; }
+        .prog-fill { height: 100%; transition: width 0.5s ease; border-radius: 10px; }
+        .bg-global { background: linear-gradient(90deg, var(--fin-color), var(--sau-color), var(--pro-color)); }
+        .bg-fin { background: var(--fin-color); } .bg-sau { background: var(--sau-color); } .bg-pro { background: var(--pro-color); }
+
+        .btn { width: 100%; padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; border: none; transition: 0.2s; margin-top: 10px; color: white;}
+        .btn-fin { background: var(--fin-color); } .btn-sau { background: var(--sau-color); } .btn-pro { background: var(--pro-color); }
+        .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); }
         
         .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
         .form-group label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
         .form-group input, .form-group select { background: #18191c; border: 1px solid #33353b; padding: 12px; border-radius: 10px; color: white; font-size: 14px; }
-        
-        /* Menu de Navegação Inferior Estilo App Premium */
-        .nav-inferior { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); width: calc(100% - 30px); max-width: 470px; background: rgba(19, 20, 24, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .nav-item { background: transparent; border: none; color: var(--text-muted); font-size: 12px; font-weight: 700; cursor: pointer; padding: 8px 12px; border-radius: 10px; transition: 0.2s; }
-        .nav-item.ativo { color: var(--accent-color); background: rgba(59, 130, 246, 0.15); }
-        
-        /* Lista de Tarefas (To-Do) */
-        .task-item { display: flex; justify-content: space-between; align-items: center; background: #18191c; padding: 12px; border-radius: 10px; margin-bottom: 8px; border: 1px solid #2a2c32; }
-        .task-item.completed { opacity: 0.5; text-decoration: line-through; }
-        .checkbox-todo { width: 18px; height: 18px; accent-color: var(--success-color); cursor: pointer; }
 
+        /* Planner Semanal */
+        .day-block { border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
+        .day-header { background: #18191c; padding: 12px; font-weight: 800; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
+        .day-content { padding: 10px; background: #111215; }
+        .task-item { display: flex; justify-content: space-between; align-items: center; background: #18191c; padding: 10px; border-radius: 8px; margin-bottom: 6px; border: 1px solid #2a2c32; font-size: 13px;}
+        .task-item.completed { opacity: 0.5; text-decoration: line-through; }
+        
+        .meta-card { background: #18191c; padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 10px; }
+
+        .nav-inferior { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); width: calc(100% - 30px); max-width: 470px; background: rgba(19, 20, 24, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px; border-radius: 20px; z-index: 100;}
+        .nav-item { background: transparent; border: none; color: var(--text-muted); font-size: 12px; font-weight: 700; cursor: pointer; padding: 8px 12px; border-radius: 10px; transition: 0.2s; }
+        
         .escondido { display: none !important; }
+        
+        /* Modais */
+        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 20px;}
+        .modal-content { background: var(--card-bg); width: 100%; max-width: 400px; padding: 24px; border-radius: 20px; border: 1px solid #33353b; }
     </style>
 </head>
 <body>
 
 <div class="app-container">
     
-    <div class="global-bar-container">
-        <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; color: var(--text-muted);">
-            <span>PROGRESSO EVOLUTIVO GLOBAL</span>
-            <span id="lbl-global-pct" style="color: var(--success-color);">0%</span>
+    <div class="card" style="padding: 15px; text-align: center;">
+        <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; color: var(--text-muted);">
+            <span>EVOLUÇÃO GLOBAL (HOJE)</span>
+            <span id="lbl-global-pct">0%</span>
         </div>
-        <div class="progress-bg"><div class="progress-fill" id="barra-global"></div></div>
-        <p id="lbl-educador-topo" style="font-size: 13px; margin: 8px 0 0 0; color: #f59e0b; font-weight: 600;">⚡ Analisando rotina...</p>
+        <div class="prog-container"><div class="prog-fill bg-global" id="barra-global" style="width: 0%;"></div></div>
     </div>
 
     <section id="aba-financas">
-        <div class="card" style="text-align: center;">
-            <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Saldo Líquido</div>
-            <div style="font-size: 34px; font-weight: 800; margin-top: 4px;" id="lbl-saldo">R$ 0,00</div>
-            <div style="display: flex; justify-content: space-between; margin-top: 15px; font-size: 13px;">
-                <span style="color: var(--text-muted);">Despesas do Mês</span>
-                <span id="lbl-gastos" style="font-weight: 600;">R$ 0,00 / R$ 3000.00</span>
+        <div class="card">
+            <h3 style="margin-top:0; color: var(--fin-color);">Saúde Financeira</h3>
+            <div class="prog-container"><div class="prog-fill bg-fin" id="barra-fin" style="width: 0%;"></div></div>
+            <div style="font-size: 30px; font-weight: 800; text-align: center; margin: 15px 0;" id="lbl-saldo">R$ 0,00</div>
+            <p style="text-align: center; font-size: 13px; color: var(--text-muted); margin: 0;">Gastos do Mês: <span id="lbl-gastos">R$ 0,00</span></p>
+            <div style="display: flex; gap:10px; margin-top: 15px;">
+                <button class="btn btn-fin" onclick="abrirModal('modal-transacao')">+ Lançar</button>
             </div>
         </div>
-        <button class="btn btn-primary" onclick="alternarSubTela('modal-financeiro')">+ Registrar Despesa/Renda</button>
-        <button class="btn btn-secondary" onclick="window.open('https://wa.me/5511999999999?text=Quero%20falar%20com%20um%20consultor', '_blank')">💬 Falar com Consultor</button>
-        
-        <div id="modal-financeiro" class="escondido" style="margin-top: 20px;">
-            <div class="card">
-                <h3>Nova Transação</h3>
-                <div class="form-group"><label>Tipo:</label><select id="fin-type"><option value="expense">Despesa</option><option value="income">Receita</option></select></div>
-                <div class="form-group"><label>Valor (R$):</label><input type="number" id="fin-amount" placeholder="0.00"></div>
-                <div class="form-group"><label>Categoria:</label><select id="fin-category"><option>Alimentação</option><option>Transporte</option><option>Lazer</option><option>Salário</option></select></div>
-                <button class="btn btn-primary" onclick="salvarTransacao()">Confirmar</button>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin:0;">Minhas Metas</h3>
+                <button class="btn btn-outline" style="width: auto; padding: 6px 12px; margin:0;" onclick="abrirModal('modal-meta-fin')">+ Nova</button>
             </div>
+            <div id="lista-metas-fin"></div>
         </div>
     </section>
 
     <section id="aba-saude" class="escondido">
-        <div class="card" style="text-align: center;">
-            <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Queima Diária Bate-Treino</div>
-            <div style="font-size: 34px; font-weight: 800; margin-top: 4px;" id="lbl-calorias">0 Kcal</div>
-            <p style="font-size: 13px; color: var(--text-muted); margin: 10px 0 0 0;" id="lbl-meta-peso">Meta: Reduzir de 90kg para 75kg</p>
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin:0; color: var(--sau-color);">Saúde Física</h3>
+                <button class="btn btn-outline" style="width: auto; padding: 6px 12px; margin:0;" onclick="abrirModal('modal-perfil-saude')">⚙️ Perfil</button>
+            </div>
+            
+            <p style="font-size: 12px; font-weight:bold; margin: 15px 0 5px 0;">Jornada de Peso: <span id="lbl-peso-info">--</span></p>
+            <div class="prog-container"><div class="prog-fill bg-sau" id="barra-peso" style="width: 0%;"></div></div>
+
+            <p style="font-size: 12px; font-weight:bold; margin: 15px 0 5px 0;">Meta Diária (<span id="lbl-cal-hoje">0</span> / <span id="lbl-cal-meta">0</span> kcal):</p>
+            <div class="prog-container"><div class="prog-fill bg-sau" id="barra-calorias" style="width: 0%;"></div></div>
         </div>
         
         <div class="card">
-            <h3>🏃 Catálogo de Exercícios</h3>
-            <div class="form-group"><label>Selecione o Exercício:</label><select id="saude-exercicio"></select></div>
-            <div class="form-group"><label>Tempo Praticado (Minutos):</label><input type="number" id="saude-tempo" placeholder="Ex: 30"></div>
-            <button class="btn btn-primary" onclick="salvarTreino()">Deduzir da Meta Calórica</button>
+            <h3>🏃 Registrar Treino</h3>
+            <div class="form-group"><label>Exercício:</label><select id="saude-exercicio"></select></div>
+            <div class="form-group"><label>Tempo Praticado (Minutos):</label><input type="number" id="saude-tempo"></div>
+            <button class="btn btn-sau" onclick="salvarTreino()">Deduzir da Meta Calórica</button>
         </div>
     </section>
 
     <section id="aba-produtividade" class="escondido">
         <div class="card">
-            <h3>✅ To-Do List Diária</h3>
-            <div style="display: flex; gap: 8px; margin-bottom: 15px;">
-                <input type="text" id="todo-titulo" placeholder="Nova tarefa..." style="flex: 1; background: #18191c; border: 1px solid #33353b; padding: 12px; border-radius: 10px; color: white;">
-                <button class="btn btn-primary" onclick="salvarTarefa()" style="width: auto; margin-top:0; padding: 0 20px;">+</button>
-            </div>
-            <div id="lista-tarefas"></div>
-        </div>
-
-        <div class="card">
-            <h3>📚 Biblioteca de Desenvolvimento</h3>
-            <div id="lista-biblioteca" style="display: flex; flex-direction: column; gap: 12px;"></div>
+            <h3 style="margin-top:0; color: var(--pro-color);">Planner Semanal</h3>
+            <p style="font-size: 12px; font-weight:bold; margin: 5px 0;">Tarefas Concluídas na Semana:</p>
+            <div class="prog-container"><div class="prog-fill bg-pro" id="barra-pro" style="width: 0%; margin-bottom: 20px;"></div></div>
+            
+            <div id="planner-semanal"></div>
         </div>
     </section>
 
     <nav class="nav-inferior">
-        <button class="nav-item ativo" id="btn-nav-financas" onclick="navegarAba('financas')">💰 Finanças</button>
-        <button class="nav-item" id="btn-nav-saude" onclick="navegarAba('saude')">🏋️ Saúde</button>
-        <button class="nav-item" id="btn-nav-produtividade" onclick="navegarAba('produtividade')">🧠 Foco</button>
+        <button class="nav-item ativo" id="nav-financas" onclick="navegar('financas')" style="color: var(--fin-color);">💰 Finanças</button>
+        <button class="nav-item" id="nav-saude" onclick="navegar('saude')">🏋️ Saúde</button>
+        <button class="nav-item" id="nav-produtividade" onclick="navegar('produtividade')">📅 Planner</button>
     </nav>
+</div>
 
+<div id="modal-transacao" class="modal-overlay escondido">
+    <div class="modal-content">
+        <h3>Nova Transação</h3>
+        <div class="form-group"><label>Tipo:</label><select id="fin-type"><option value="expense">Despesa (Saída)</option><option value="income">Renda (Entrada)</option></select></div>
+        <div class="form-group"><label>Valor (R$):</label><input type="number" id="fin-amount"></div>
+        <div class="form-group"><label>Categoria:</label><input type="text" id="fin-category" value="Geral"></div>
+        <button class="btn btn-fin" onclick="salvarTransacao()">Salvar</button>
+        <button class="btn btn-outline" onclick="fecharModal('modal-transacao')">Cancelar</button>
+    </div>
+</div>
+
+<div id="modal-meta-fin" class="modal-overlay escondido">
+    <div class="modal-content">
+        <h3>Criar Meta Financeira</h3>
+        <div class="form-group"><label>O que você quer alcançar? (Ex: Viagem)</label><input type="text" id="meta-titulo"></div>
+        <div class="form-group"><label>Valor Necessário (R$):</label><input type="number" id="meta-valor"></div>
+        <div class="form-group"><label>Prazo Limite:</label><input type="date" id="meta-prazo"></div>
+        <button class="btn btn-fin" onclick="salvarMetaFin()">Criar Meta</button>
+        <button class="btn btn-outline" onclick="fecharModal('modal-meta-fin')">Cancelar</button>
+    </div>
+</div>
+
+<div id="modal-aporte" class="modal-overlay escondido">
+    <div class="modal-content">
+        <h3>Guardar Dinheiro</h3>
+        <input type="hidden" id="aporte-meta-id">
+        <div class="form-group"><label>Valor a transferir para a meta (R$):</label><input type="number" id="aporte-valor"></div>
+        <button class="btn btn-fin" onclick="salvarAporte()">Aportar</button>
+        <button class="btn btn-outline" onclick="fecharModal('modal-aporte')">Cancelar</button>
+    </div>
+</div>
+
+<div id="modal-perfil-saude" class="modal-overlay escondido">
+    <div class="modal-content">
+        <h3>Configurar Corpo & Metas</h3>
+        <div class="form-group"><label>Seu Peso Atual (kg):</label><input type="number" id="perfil-peso-atual"></div>
+        <div class="form-group"><label>Seu Peso Alvo (kg):</label><input type="number" id="perfil-peso-alvo"></div>
+        <div class="form-group"><label>Meta Calórica Diária (kcal):</label><input type="number" id="perfil-calorias" placeholder="Ex: 500"></div>
+        <button class="btn btn-sau" onclick="salvarPerfilSaude()">Atualizar Perfil</button>
+        <button class="btn btn-outline" onclick="fecharModal('modal-perfil-saude')">Cancelar</button>
+    </div>
 </div>
 
 <script src="app.js"></script>

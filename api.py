@@ -28,7 +28,12 @@ def inicializar_banco():
         except Exception: pass
         
         cursor.execute("CREATE TABLE IF NOT EXISTS recurring_expenses (id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id) ON DELETE CASCADE, description TEXT, amount NUMERIC, category VARCHAR(100), due_day INT);")
+        
         cursor.execute("CREATE TABLE IF NOT EXISTS financial_goals (id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id) ON DELETE CASCADE, title VARCHAR(255), dream TEXT, target_amount NUMERIC, current_amount NUMERIC DEFAULT 0, months INT);")
+        
+        # NOVO: Tabela para histórico de movimentação dentro da meta!
+        cursor.execute("CREATE TABLE IF NOT EXISTS goal_transactions (id SERIAL PRIMARY KEY, goal_id INT REFERENCES financial_goals(id) ON DELETE CASCADE, type VARCHAR(20), amount NUMERIC, description TEXT, date VARCHAR(50));")
+        
         cursor.execute("CREATE TABLE IF NOT EXISTS health_goals (id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id) ON DELETE CASCADE, title VARCHAR(255), dream TEXT, current_weight NUMERIC, target_weight NUMERIC, months INT, daily_calorie_goal NUMERIC);")
         cursor.execute("CREATE TABLE IF NOT EXISTS exercises (id SERIAL PRIMARY KEY, name VARCHAR(255), muscle_group VARCHAR(100), calories_per_minute NUMERIC);")
         cursor.execute("CREATE TABLE IF NOT EXISTS workout_logs (id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id) ON DELETE CASCADE, exercise_id INT, duration_minutes INT, calories_burned NUMERIC, date VARCHAR(50));")
@@ -52,7 +57,7 @@ class ModeloEdicaoTransacao(BaseModel): type: str; amount: float; category: str;
 class ModeloRecorrente(BaseModel): user_id: int; description: str; amount: float; category: str; due_day: int
 class ModeloMetaFin(BaseModel): user_id: int; title: str; dream: str; target_amount: float; current_amount: float; months: int
 class ModeloEdicaoMetaFin(BaseModel): title: str; dream: str; target_amount: float; current_amount: float; months: int
-class ModeloAporte(BaseModel): amount: float
+class ModeloMetaTransacao(BaseModel): type: str; amount: float; description: str; date: str
 class ModeloMetaSaude(BaseModel): user_id: int; title: str; dream: str; current_weight: float; target_weight: float; months: int
 class ModeloMetaProd(BaseModel): user_id: int; title: str; dream: str; months: int
 class ModeloTreino(BaseModel): user_id: int; exercise_id: int; duration_minutes: int; date: str
@@ -75,7 +80,6 @@ def logar_usuario(obj: ModeloLogin):
     if user: return user
     raise HTTPException(status_code=401, detail="Credenciais inválidas.")
 
-# --- METAS FINANCEIRAS ---
 @app.post("/goals/finance")
 def criar_meta_fin(obj: ModeloMetaFin):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
@@ -97,10 +101,16 @@ def deletar_meta_fin(id: int):
     conn.commit(); cursor.close(); conn.close()
     return {"status": "ok"}
 
-@app.put("/goals/finance/{id}/add")
-def aportar_meta(id: int, obj: ModeloAporte):
+# NOVO ENDPOINT DE MOVIMENTAÇÃO DE METAS (APORTE/RETIRADA)
+@app.post("/goals/finance/{id}/transaction")
+def transacao_meta(id: int, obj: ModeloMetaTransacao):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
-    cursor.execute("UPDATE financial_goals SET current_amount = current_amount + %s WHERE id = %s;", (obj.amount, id))
+    if obj.type == 'deposit':
+        cursor.execute("UPDATE financial_goals SET current_amount = current_amount + %s WHERE id = %s;", (obj.amount, id))
+    elif obj.type == 'withdrawal':
+        cursor.execute("UPDATE financial_goals SET current_amount = current_amount - %s WHERE id = %s;", (obj.amount, id))
+        
+    cursor.execute("INSERT INTO goal_transactions (goal_id, type, amount, description, date) VALUES (%s, %s, %s, %s, %s);", (id, obj.type, obj.amount, obj.description, obj.date))
     conn.commit(); cursor.close(); conn.close()
     return {"status": "ok"}
 
@@ -119,7 +129,6 @@ def criar_meta_prod(obj: ModeloMetaProd):
     conn.commit(); cursor.close(); conn.close()
     return {"status": "ok"}
 
-# --- TRANSAÇÕES ---
 @app.post("/transactions")
 def salvar_transacao(obj: ModeloTransacao):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
@@ -155,7 +164,6 @@ def deletar_recorrente(id: int):
     conn.commit(); cursor.close(); conn.close()
     return {"status": "ok"}
 
-# --- OUTROS PILARES ---
 @app.get("/exercises")
 def listar_exercicios():
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -169,32 +177,47 @@ def logar_treino(obj: ModeloTreino):
     cursor.execute("SELECT calories_per_minute FROM exercises WHERE id = %s;", (obj.exercise_id,))
     cal = float(cursor.fetchone()[0]) * obj.duration_minutes
     cursor.execute("INSERT INTO workout_logs (user_id, exercise_id, duration_minutes, calories_burned, date) VALUES (%s, %s, %s, %s, %s);", (obj.user_id, obj.exercise_id, obj.duration_minutes, cal, obj.date))
-    conn.commit(); cursor.close(); conn.close(); return {"status": "ok"}
+    conn.commit(); cursor.close(); conn.close()
+    return {"status": "ok"}
 
 @app.get("/tasks/week")
 def listar_tarefas_semana(user_id: int, start: str, end: str):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute("SELECT * FROM tasks WHERE user_id = %s AND date >= %s AND date <= %s ORDER BY date ASC, id ASC;", (user_id, start, end))
-    dados = cursor.fetchall(); cursor.close(); conn.close(); return dados
+    dados = cursor.fetchall(); cursor.close(); conn.close()
+    return dados
 
 @app.post("/tasks")
 def criar_tarefa(obj: ModeloTarefa):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
     cursor.execute("INSERT INTO tasks (user_id, title, date) VALUES (%s, %s, %s);", (obj.user_id, obj.title, obj.date))
-    conn.commit(); cursor.close(); conn.close(); return {"status": "ok"}
+    conn.commit(); cursor.close(); conn.close()
+    return {"status": "ok"}
 
 @app.patch("/tasks/{id}/toggle")
 def alternar_tarefa(id: int):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
     cursor.execute("UPDATE tasks SET is_completed = NOT is_completed WHERE id = %s;", (id,))
-    conn.commit(); cursor.close(); conn.close(); return {"status": "ok"}
+    conn.commit(); cursor.close(); conn.close()
+    return {"status": "ok"}
 
 @app.get("/dashboard/unificado")
 def dashboard_unificado(user_id: int, date: str, start_week: str, end_week: str):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor(cursor_factory=RealDictCursor)
     
+    # Busca Histórico de Metas
+    cursor.execute("SELECT * FROM goal_transactions ORDER BY date DESC, id DESC;")
+    all_gtx = cursor.fetchall()
+
     cursor.execute("SELECT * FROM financial_goals WHERE user_id = %s ORDER BY id DESC;", (user_id,))
-    metas_fin = [{"id": m["id"], "title": m["title"], "dream": m["dream"], "target_amount": float(m["target_amount"]), "current_amount": float(m["current_amount"]), "months": m["months"]} for m in cursor.fetchall()]
+    metas_fin = []
+    for m in cursor.fetchall():
+        m_dict = dict(m)
+        m_dict['target_amount'] = float(m_dict['target_amount'])
+        m_dict['current_amount'] = float(m_dict['current_amount'])
+        # Anexa o histórico específico dessa meta
+        m_dict['history'] = [{"type": tx["type"], "amount": float(tx["amount"]), "description": tx["description"], "date": tx["date"]} for tx in all_gtx if tx["goal_id"] == m["id"]]
+        metas_fin.append(m_dict)
     
     cursor.execute("SELECT * FROM health_goals WHERE user_id = %s ORDER BY id DESC LIMIT 1;", (user_id,))
     ms = cursor.fetchone()

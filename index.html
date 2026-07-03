@@ -29,7 +29,7 @@
         
         .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
         .form-group label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
-        .form-group input, .form-group select, .form-group textarea { background: #18191c; border: 1px solid #33353b; padding: 12px; border-radius: 10px; color: white; font-size: 14px; width: 100%;}
+        .form-group input, .form-group select, .form-group textarea { background: #18191c; border: 1px solid #33353b; padding: 12px; border-radius: 10px; color: white; font-size: 14px; width: 100%; resize: vertical;}
         
         .toggle-auth { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #2a2c32; padding-bottom: 10px; }
         .toggle-auth button { flex: 1; background: none; border: none; color: var(--text-muted); font-weight: 700; padding: 8px; cursor: pointer; border-bottom: 2px solid transparent; transition: 0.3s;}
@@ -41,6 +41,7 @@
         .history-title { font-size: 14px; font-weight: bold; color: white; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .history-sub { font-size: 11px; color: var(--text-muted); }
         .history-amount { font-size: 14px; font-weight: 800; white-space: nowrap; }
+        .history-actions { display: flex; gap: 5px; flex-direction: column;}
         
         .day-block { border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
         .day-header { background: #18191c; padding: 12px; font-weight: 800; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
@@ -48,7 +49,6 @@
         .task-item { display: flex; justify-content: space-between; align-items: center; background: #18191c; padding: 10px; border-radius: 8px; margin-bottom: 6px; border: 1px solid #2a2c32; font-size: 13px;}
         .task-item.completed { opacity: 0.5; text-decoration: line-through; }
         .meta-card { background: #18191c; padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 10px; }
-        .vision-box { background: rgba(255,255,255,0.05); border-left: 3px solid var(--fin-color); padding: 12px; border-radius: 8px; margin-bottom: 15px; font-style: italic; font-size: 13px; color: #d4d4d8; font-weight: 600; line-height: 1.5;}
         
         .nav-inferior { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); width: calc(100% - 30px); max-width: 470px; background: rgba(19, 20, 24, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px; border-radius: 20px; z-index: 100;}
         .nav-item { background: transparent; border: none; color: var(--text-muted); font-size: 12px; font-weight: 700; cursor: pointer; padding: 8px 12px; border-radius: 10px; transition: 0.2s; }
@@ -75,29 +75,24 @@
 
     <div id="conteudo-app" class="escondido">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h4 style="margin:0; color: var(--text-muted);">Foco Ativo: <span id="lbl-boas-vindas" style="color: white;">--</span></h4>
+            <h4 style="margin:0; color: var(--text-muted);">Bem-vindo(a), <span id="lbl-boas-vindas" style="color: white;">--</span></h4>
             <button onclick="fazerLogout()" style="background: none; border: none; color: var(--danger-color); font-size: 11px; font-weight: bold; cursor: pointer;">SAIR</button>
         </div>
 
         <section id="aba-financas">
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 style="margin:0;">🎯 Metas de Vida</h3>
-                    <button class="btn-outline btn-small" style="color:white; border-color: var(--fin-color);" onclick="abrirModal('modal-meta-fin')">+ Nova</button>
+                    <h3 style="margin:0;">🎯 Suas Metas de Vida</h3>
+                    <button class="btn-outline btn-small" style="color:white; border-color: var(--fin-color);" onclick="prepararNovaMetaFin()">+ Nova</button>
                 </div>
                 <div id="lista-metas-fin"></div>
             </div>
-
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h3 style="margin:0; color: var(--fin-color);">Visão Financeira</h3>
                     <input type="month" id="filtro-mes-fin" style="background: #18191c; border: 1px solid #33353b; color: white; padding: 4px 8px; border-radius: 8px; font-size: 12px;" onchange="recarregarTudo()">
                 </div>
-                <div class="balance-bar-wrapper">
-                    <div class="balance-bar-neg" id="barra-fin-neg"></div>
-                    <div class="balance-bar-pos" id="barra-fin-pos"></div>
-                    <div class="balance-bar-zero"></div>
-                </div>
+                <div class="balance-bar-wrapper"><div class="balance-bar-neg" id="barra-fin-neg"></div><div class="balance-bar-pos" id="barra-fin-pos"></div><div class="balance-bar-zero"></div></div>
                 <div style="font-size: 36px; font-weight: 800; text-align: center; margin: 15px 0; transition: 0.3s;" id="lbl-saldo">R$ 0,00</div>
                 <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin: 0 10px;">
                     <span>Entradas: <span id="lbl-rendas" style="color: var(--success-color); font-weight: bold;">R$ 0,00</span></span>
@@ -105,15 +100,11 @@
                 </div>
                 <button class="btn btn-fin" onclick="prepararNovaTransacao()">+ Lançar Movimentação</button>
             </div>
-
             <div class="card">
                 <h3 style="margin-top:0;">Onde seu dinheiro vai? (Saídas)</h3>
                 <div style="position: relative; height: 220px; width: 100%; margin-bottom: 20px;"><canvas id="financeChart"></canvas></div>
                 <div id="ranking-categorias" style="margin-bottom: 20px;"></div>
-                
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <h4 style="font-size: 13px; color: var(--text-muted); margin: 0;">HISTÓRICO <span id="lbl-filtro-categoria" style="color:var(--fin-color);"></span></h4>
-                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><h4 style="font-size: 13px; color: var(--text-muted); margin: 0;">HISTÓRICO DO MÊS <span id="lbl-filtro-categoria" style="color:var(--fin-color);"></span></h4></div>
                 <div class="toggle-auth" style="margin-bottom: 10px;">
                     <button id="tab-hist-all" class="active" style="border-color: var(--text-color); color: white;" onclick="setHistoryTab('all')">Tudo</button>
                     <button id="tab-hist-income" onclick="setHistoryTab('income')">Entradas</button>
@@ -121,12 +112,17 @@
                 </div>
                 <div id="lista-transacoes" style="max-height: 350px; overflow-y: auto; padding-right: 5px;"></div>
             </div>
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;"><h3 style="margin:0;">Gastos Recorrentes</h3><button class="btn-outline btn-small" onclick="abrirModal('modal-recorrente')">+ Adicionar</button></div>
+                <div id="lista-recorrentes"></div>
+            </div>
         </section>
 
         <section id="aba-saude" class="escondido">
+            
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 style="margin:0;">🏆 Metas Físicas</h3>
+                    <h3 style="margin:0; color: var(--sau-color);">🏆 Metas Físicas</h3>
                     <button class="btn-outline btn-small" style="color:white; border-color: var(--sau-color);" onclick="abrirModal('modal-meta-saude')">+ Nova Meta</button>
                 </div>
                 <div id="lista-metas-saude"></div>
@@ -134,8 +130,8 @@
             
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <h3 style="margin:0; color: var(--sau-color);">Diário Alimentar</h3>
-                    <button class="btn-outline btn-small" onclick="prepararNovoAlimento()">+ Lançar Refeição</button>
+                    <h3 style="margin:0;">🥗 Diário Alimentar (Mês)</h3>
+                    <button class="btn-outline btn-small" onclick="prepararNovoAlimento()">+ Lançar</button>
                 </div>
                 <div style="position: relative; height: 180px; width: 100%; margin-bottom: 20px;"><canvas id="foodChart"></canvas></div>
                 <div id="ranking-comidas" style="margin-bottom: 10px;"></div>
@@ -143,11 +139,15 @@
             </div>
 
             <div class="card">
-                <h3>🏃 Registrar Atividade Física</h3>
-                <div class="form-group"><label>Exercício:</label><select id="saude-exercicio"></select></div>
+                <h3 style="margin-top:0;">🏃 Registrar Atividade Hoje</h3>
+                <div class="form-group"><label>O que você fez hoje?</label><select id="saude-exercicio"></select></div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                    <div class="form-group"><label>Tempo (Minutos):</label><input type="number" id="saude-tempo" placeholder="Ex: 40"></div>
-                    <div class="form-group"><label>Distância (Km)* Opcional:</label><input type="number" id="saude-distancia" placeholder="Ex: 5.5" step="0.1"></div>
+                    <div class="form-group"><label>Tempo (Min):</label><input type="number" id="saude-tempo" placeholder="40"></div>
+                    <div class="form-group"><label>Distância (Km) *Opcional:</label><input type="number" id="saude-distancia" placeholder="5.5" step="0.1"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 12px; color: var(--text-muted);">
+                    <span>🔥 Queimou: <span id="lbl-cal-hoje" style="color: var(--sau-color); font-weight:bold;">0</span> kcal hoje</span>
+                    <span>📍 Percorreu: <span id="lbl-km-hoje" style="color: white; font-weight:bold;">0</span> km hoje</span>
                 </div>
                 <button class="btn btn-sau" onclick="salvarTreino()">Registrar Esforço</button>
             </div>
@@ -157,7 +157,10 @@
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h3 style="margin:0; color: var(--pro-color);">Sua Rotina</h3>
+                    <button class="btn-outline btn-small" style="color:white; border-color: var(--pro-color);" onclick="abrirModal('modal-meta-prod')">Propósito</button>
                 </div>
+                <p style="font-size: 12px; font-weight:bold; margin: 5px 0;">Tarefas Concluídas na Semana:</p>
+                <div class="prog-container"><div class="prog-fill bg-pro" id="barra-pro" style="width: 0%; margin-bottom: 20px;"></div></div>
                 <div id="planner-semanal"></div>
             </div>
         </section>
@@ -170,18 +173,31 @@
     </div>
 </div>
 
+<div id="modal-transacao" class="modal-overlay escondido"><div class="modal-content"><h3 id="transacao-modal-title">Nova Transação</h3><input type="hidden" id="fin-id"><div class="form-group"><label>Data:</label><input type="date" id="fin-date"></div><div class="form-group"><label>Tipo de Lançamento:</label><select id="fin-type" onchange="atualizarCategoriasSelect()"><option value="expense">Despesa (Saída)</option><option value="income">Renda (Entrada)</option></select></div><div class="form-group"><label>Valor (R$):</label><input type="number" id="fin-amount" placeholder="0.00" step="0.01"></div><div class="form-group"><label>Descrição / Origem:</label><input type="text" id="fin-desc"></div><div class="form-group"><label>Categoria:</label><select id="fin-category"></select></div><button class="btn btn-fin" onclick="salvarTransacao()">Salvar</button><button class="btn btn-outline" onclick="fecharModal('modal-transacao')">Cancelar</button></div></div>
+<div id="modal-recorrente" class="modal-overlay escondido"><div class="modal-content"><h3>Novo Gasto Fixo</h3><div class="form-group"><label>Descrição:</label><input type="text" id="rec-desc"></div><div class="form-group"><label>Valor (R$):</label><input type="number" id="rec-amount" step="0.01"></div><div class="form-group"><label>Dia do Vencimento:</label><input type="number" id="rec-day" min="1" max="31"></div><div class="form-group"><label>Categoria:</label><select id="rec-category"><option value="Moradia">Moradia</option><option value="Educação">Educação</option><option value="Assinaturas">Assinaturas</option><option value="Outros">Outros</option></select></div><button class="btn btn-fin" onclick="salvarRecorrente()">Salvar Fixo</button><button class="btn btn-outline" onclick="fecharModal('modal-recorrente')">Cancelar</button></div></div>
+<div id="modal-meta-fin" class="modal-overlay escondido"><div class="modal-content"><h3 id="meta-fin-modal-title">Sua Meta Financeira</h3><input type="hidden" id="meta-fin-id"><div class="form-group"><label>Título (Ex: Casa):</label><input type="text" id="meta-fin-titulo"></div><div class="form-group"><label>Detalhe seu sonho:</label><textarea id="meta-fin-dream" rows="2"></textarea></div><div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div class="form-group"><label>Valor Total (R$):</label><input type="number" id="meta-fin-valor"></div><div class="form-group"><label>Já guardado (R$):</label><input type="number" id="meta-fin-atual"></div></div><div class="form-group"><label>Em quantos meses?</label><input type="number" id="meta-fin-meses" placeholder="12"></div><button class="btn btn-fin" onclick="salvarMetaFin()">Firmar Compromisso</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-fin')">Cancelar</button></div></div>
+<div id="modal-meta-tx" class="modal-overlay escondido"><div class="modal-content"><h3>Movimentar Sonho</h3><input type="hidden" id="meta-tx-id"><div class="form-group"><label>Ação:</label><select id="meta-tx-type"><option value="deposit">Aporte (+ Guardar)</option><option value="withdrawal">Retirada (- Sacar)</option></select></div><div class="form-group"><label>Data:</label><input type="date" id="meta-tx-date"></div><div class="form-group"><label>Valor (R$):</label><input type="number" id="meta-tx-amount" step="0.01"></div><div class="form-group"><label>Motivo:</label><input type="text" id="meta-tx-desc"></div><button class="btn btn-fin" onclick="salvarTransacaoMeta()">Lançar na Meta</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-tx')">Cancelar</button></div></div>
+
 <div id="modal-meta-saude" class="modal-overlay escondido">
     <div class="modal-content">
         <h3>Criar Meta Física</h3>
-        <div class="form-group"><label>Tipo de Meta:</label><select id="meta-sau-type"><option value="weight">Emagrecer / Ganhar Peso</option><option value="distance_run">Correr (Distância Máx)</option><option value="distance_swim">Nadar (Distância Máx)</option><option value="other">Outro Esporte</option></select></div>
-        <div class="form-group"><label>Título (Ex: Correr a Meia Maratona):</label><input type="text" id="meta-sau-titulo"></div>
-        <div class="form-group"><label>Detalhe seu sonho. O que você fará por ele?</label><textarea id="meta-sau-dream" rows="2"></textarea></div>
+        <div class="form-group">
+            <label>Tipo de Meta:</label>
+            <select id="meta-sau-type">
+                <option value="weight">Emagrecer / Engordar (Balança)</option>
+                <option value="distance_run">Correr Distância (Maratona)</option>
+                <option value="distance_swim">Natação Distância</option>
+                <option value="other">Outro Foco de Esporte</option>
+            </select>
+        </div>
+        <div class="form-group"><label>Título (Ex: Meia Maratona):</label><input type="text" id="meta-sau-titulo"></div>
+        <div class="form-group"><label>Detalhe seu objetivo:</label><textarea id="meta-sau-dream" rows="2"></textarea></div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <div class="form-group"><label>Valor Atual:</label><input type="number" id="meta-sau-atual"></div>
-            <div class="form-group"><label>Valor Alvo/Desejado:</label><input type="number" id="meta-sau-alvo"></div>
+            <div class="form-group"><label>Valor Atual:</label><input type="number" id="meta-sau-atual" step="0.1"></div>
+            <div class="form-group"><label>Valor Desejado:</label><input type="number" id="meta-sau-alvo" step="0.1"></div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <div class="form-group"><label>Unidade de Medida:</label><select id="meta-sau-unit"><option value="kg">Quilos (kg)</option><option value="km">Quilômetros (km)</option><option value="m">Metros (m)</option><option value="aulas">Aulas/Sessões</option></select></div>
+            <div class="form-group"><label>Unidade de Medida:</label><select id="meta-sau-unit"><option value="kg">kg</option><option value="km">km</option><option value="aulas">Aulas</option></select></div>
             <div class="form-group"><label>Meses de Foco:</label><input type="number" id="meta-sau-meses"></div>
         </div>
         <button class="btn btn-sau" onclick="salvarMetaSaude()">Registrar Meta</button>
@@ -191,10 +207,10 @@
 
 <div id="modal-alimento" class="modal-overlay escondido">
     <div class="modal-content">
-        <h3>Nova Refeição</h3>
-        <div class="form-group"><label>O que você comeu?</label><input type="text" id="food-desc" placeholder="Ex: Salada com Frango"></div>
+        <h3>Lançar Refeição</h3>
+        <div class="form-group"><label>O que comeu?</label><input type="text" id="food-desc" placeholder="Ex: Salada de Frango"></div>
         <div class="form-group">
-            <label>Como você classifica?</label>
+            <label>Classificação:</label>
             <select id="food-cat">
                 <option value="Saudável/Natural">🥗 Saudável / Natural</option>
                 <option value="Carboidrato Simples">🍞 Carboidrato Simples</option>
@@ -203,17 +219,16 @@
                 <option value="Bebida Alcóolica">🍺 Bebida Alcóolica</option>
             </select>
         </div>
-        <button class="btn btn-sau" onclick="salvarAlimento()">Salvar no Diário</button>
+        <button class="btn btn-sau" onclick="salvarAlimento()">Adicionar ao Diário</button>
         <button class="btn btn-outline" onclick="fecharModal('modal-alimento')">Cancelar</button>
     </div>
 </div>
 
-<div id="modal-transacao" class="modal-overlay escondido"><div class="modal-content"><h3 id="transacao-modal-title">Nova Transação</h3><input type="hidden" id="fin-id"><div class="form-group"><label>Data:</label><input type="date" id="fin-date"></div><div class="form-group"><label>Tipo de Lançamento:</label><select id="fin-type" onchange="atualizarCategoriasSelect()"><option value="expense">Despesa (Saída)</option><option value="income">Renda (Entrada)</option></select></div><div class="form-group"><label>Valor (R$):</label><input type="number" id="fin-amount" placeholder="0.00" step="0.01"></div><div class="form-group"><label>Descrição / Origem (Ex: Salário, Mercado):</label><input type="text" id="fin-desc"></div><div class="form-group"><label>Categoria:</label><select id="fin-category"></select></div><button class="btn btn-fin" onclick="salvarTransacao()">Salvar</button><button class="btn btn-outline" onclick="fecharModal('modal-transacao')">Cancelar</button></div></div>
-<div id="modal-meta-fin" class="modal-overlay escondido"><div class="modal-content"><h3 id="meta-fin-modal-title">Sua Meta Financeira</h3><input type="hidden" id="meta-fin-id"><div class="form-group"><label>Título:</label><input type="text" id="meta-fin-titulo"></div><div class="form-group"><label>Detalhe bem seu sonho:</label><textarea id="meta-fin-dream" rows="2"></textarea></div><div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div class="form-group"><label>Valor Total (R$):</label><input type="number" id="meta-fin-valor"></div><div class="form-group"><label>Já guardado (R$):</label><input type="number" id="meta-fin-atual"></div></div><div class="form-group"><label>Em quantos meses?</label><input type="number" id="meta-fin-meses" placeholder="12"></div><button class="btn btn-fin" onclick="salvarMetaFin()">Firmar Compromisso</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-fin')">Cancelar</button></div></div>
-<div id="modal-meta-tx" class="modal-overlay escondido"><div class="modal-content"><h3>Movimentar Sonho</h3><input type="hidden" id="meta-tx-id"><div class="form-group"><label>Ação:</label><select id="meta-tx-type"><option value="deposit">Aporte (+ Guardar)</option><option value="withdrawal">Retirada (- Sacar)</option></select></div><div class="form-group"><label>Data:</label><input type="date" id="meta-tx-date"></div><div class="form-group"><label>Valor (R$):</label><input type="number" id="meta-tx-amount" step="0.01"></div><div class="form-group"><label>Origem / Motivo da retirada:</label><input type="text" id="meta-tx-desc"></div><button class="btn btn-fin" onclick="salvarTransacaoMeta()">Lançar na Meta</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-tx')">Cancelar</button></div></div>
+<div id="modal-meta-prod" class="modal-overlay escondido"><div class="modal-content"><h3>Qual o seu Propósito?</h3><div class="form-group"><label>Título:</label><input type="text" id="meta-pro-titulo"></div><div class="form-group"><label>Por que quer organizar a rotina?</label><textarea id="meta-pro-dream" rows="2"></textarea></div><div class="form-group"><label>Em quantos meses?</label><input type="number" id="meta-pro-meses"></div><button class="btn btn-pro" onclick="salvarMetaProd()">Salvar Propósito</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-prod')">Cancelar</button></div></div>
 
 <script>
-    const v = new Date().getTime(); document.write('<script src="app.js?v=' + v + '"><\/script>');
+    const v = new Date().getTime(); 
+    document.write('<script src="app.js?v=' + v + '"><\/script>');
 </script>
 </body>
 </html>

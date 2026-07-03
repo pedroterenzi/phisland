@@ -25,26 +25,44 @@ def inicializar_banco():
         cursor.execute("CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, name VARCHAR(255), nickname VARCHAR(100), login VARCHAR(100) UNIQUE, password VARCHAR(100));")
         cursor.execute("CREATE TABLE IF NOT EXISTS transactions (id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id) ON DELETE CASCADE, type VARCHAR(20), amount NUMERIC, category VARCHAR(100), description TEXT, date VARCHAR(50));")
         try: cursor.execute("ALTER TABLE transactions ADD COLUMN IF NOT EXISTS description TEXT DEFAULT '';")
-        except Exception: pass
+        except: pass
         
         cursor.execute("CREATE TABLE IF NOT EXISTS recurring_expenses (id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id) ON DELETE CASCADE, description TEXT, amount NUMERIC, category VARCHAR(100), due_day INT);")
-        
         cursor.execute("CREATE TABLE IF NOT EXISTS financial_goals (id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id) ON DELETE CASCADE, title VARCHAR(255), dream TEXT, target_amount NUMERIC, current_amount NUMERIC DEFAULT 0, months INT);")
-        
-        # NOVO: Tabela para histórico de movimentação dentro da meta!
         cursor.execute("CREATE TABLE IF NOT EXISTS goal_transactions (id SERIAL PRIMARY KEY, goal_id INT REFERENCES financial_goals(id) ON DELETE CASCADE, type VARCHAR(20), amount NUMERIC, description TEXT, date VARCHAR(50));")
         
-        cursor.execute("CREATE TABLE IF NOT EXISTS health_goals (id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id) ON DELETE CASCADE, title VARCHAR(255), dream TEXT, current_weight NUMERIC, target_weight NUMERIC, months INT, daily_calorie_goal NUMERIC);")
+        # 🚨 RESET DE SAÚDE: Recriando a tabela de metas para aceitar qualquer unidade (kg, km, etc)
+        cursor.execute("DROP TABLE IF EXISTS health_goals CASCADE;")
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS health_goals (
+                id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id) ON DELETE CASCADE,
+                title VARCHAR(255), dream TEXT, goal_type VARCHAR(50), 
+                current_amount NUMERIC DEFAULT 0, target_amount NUMERIC, unit VARCHAR(20), months INT
+            );
+        """)
+        
+        # NOVO: Tabela de Alimentação
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS food_logs (
+                id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id) ON DELETE CASCADE,
+                description VARCHAR(255), category VARCHAR(100), date VARCHAR(50)
+            );
+        """)
+        
         cursor.execute("CREATE TABLE IF NOT EXISTS exercises (id SERIAL PRIMARY KEY, name VARCHAR(255), muscle_group VARCHAR(100), calories_per_minute NUMERIC);")
         cursor.execute("CREATE TABLE IF NOT EXISTS workout_logs (id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id) ON DELETE CASCADE, exercise_id INT, duration_minutes INT, calories_burned NUMERIC, date VARCHAR(50));")
+        try: cursor.execute("ALTER TABLE workout_logs ADD COLUMN IF NOT EXISTS distance_km NUMERIC DEFAULT 0;")
+        except: pass
+        
         cursor.execute("CREATE TABLE IF NOT EXISTS productivity_goals (id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id) ON DELETE CASCADE, title VARCHAR(255), dream TEXT, months INT);")
         cursor.execute("CREATE TABLE IF NOT EXISTS tasks (id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id) ON DELETE CASCADE, title VARCHAR(255), is_completed BOOLEAN DEFAULT FALSE, date VARCHAR(50));")
         
         cursor.execute("SELECT COUNT(*) FROM exercises;")
         if cursor.fetchone()[0] == 0:
-            cursor.execute("INSERT INTO exercises (name, muscle_group, calories_per_minute) VALUES ('Musculação', 'Geral', 6.0), ('Corrida', 'Cardio', 11.0);")
+            cursor.execute("INSERT INTO exercises (name, muscle_group, calories_per_minute) VALUES ('Musculação', 'Geral', 6.0), ('Corrida', 'Cardio', 11.0), ('Ciclismo', 'Cardio', 8.5), ('Natação', 'Cardio', 10.0);")
             
         conn.commit(); cursor.close(); conn.close()
+        print("⚡ Banco de Dados Sincronizado!")
     except Exception as e:
         print(f"Erro BD: {str(e)}")
 
@@ -56,11 +74,14 @@ class ModeloTransacao(BaseModel): user_id: int; type: str; amount: float; catego
 class ModeloEdicaoTransacao(BaseModel): type: str; amount: float; category: str; description: str; date: str
 class ModeloRecorrente(BaseModel): user_id: int; description: str; amount: float; category: str; due_day: int
 class ModeloMetaFin(BaseModel): user_id: int; title: str; dream: str; target_amount: float; current_amount: float; months: int
-class ModeloEdicaoMetaFin(BaseModel): title: str; dream: str; target_amount: float; current_amount: float; months: int
 class ModeloMetaTransacao(BaseModel): type: str; amount: float; description: str; date: str
-class ModeloMetaSaude(BaseModel): user_id: int; title: str; dream: str; current_weight: float; target_weight: float; months: int
+
+# NOVOS MODELOS DE SAÚDE E ALIMENTAÇÃO
+class ModeloMetaSaude(BaseModel): user_id: int; title: str; dream: str; goal_type: str; current_amount: float; target_amount: float; unit: str; months: int
+class ModeloTreino(BaseModel): user_id: int; exercise_id: int; duration_minutes: int; distance_km: float; date: str
+class ModeloAlimento(BaseModel): user_id: int; description: str; category: str; date: str
+
 class ModeloMetaProd(BaseModel): user_id: int; title: str; dream: str; months: int
-class ModeloTreino(BaseModel): user_id: int; exercise_id: int; duration_minutes: int; date: str
 class ModeloTarefa(BaseModel): user_id: int; title: str; date: str
 
 @app.post("/auth/signup")
@@ -70,7 +91,7 @@ def cadastrar_usuario(obj: ModeloCadastro):
         cursor.execute("INSERT INTO users (name, nickname, login, password) VALUES (%s, %s, %s, %s) RETURNING id;", (obj.name, obj.nickname, obj.login.strip().lower(), obj.password))
         novo_id = cursor.fetchone()[0]; conn.commit(); cursor.close(); conn.close()
         return {"status": "ok", "user_id": novo_id, "nickname": obj.nickname}
-    except Exception as e: raise HTTPException(status_code=400, detail="Erro no cadastro.")
+    except: raise HTTPException(status_code=400, detail="Erro no cadastro.")
 
 @app.post("/auth/login")
 def logar_usuario(obj: ModeloLogin):
@@ -78,91 +99,64 @@ def logar_usuario(obj: ModeloLogin):
     cursor.execute("SELECT id, nickname FROM users WHERE login = %s AND password = %s;", (obj.login.strip().lower(), obj.password))
     user = cursor.fetchone(); cursor.close(); conn.close()
     if user: return user
-    raise HTTPException(status_code=401, detail="Credenciais inválidas.")
+    raise HTTPException(status_code=401, detail="Inválido.")
 
+# --- FINANÇAS ---
 @app.post("/goals/finance")
 def criar_meta_fin(obj: ModeloMetaFin):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
     cursor.execute("INSERT INTO financial_goals (user_id, title, dream, target_amount, current_amount, months) VALUES (%s, %s, %s, %s, %s, %s);", (obj.user_id, obj.title, obj.dream, obj.target_amount, obj.current_amount, obj.months))
-    conn.commit(); cursor.close(); conn.close()
-    return {"status": "ok"}
-
-@app.put("/goals/finance/{id}")
-def editar_meta_fin(id: int, obj: ModeloEdicaoMetaFin):
-    conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
-    cursor.execute("UPDATE financial_goals SET title=%s, dream=%s, target_amount=%s, current_amount=%s, months=%s WHERE id=%s;", (obj.title, obj.dream, obj.target_amount, obj.current_amount, obj.months, id))
-    conn.commit(); cursor.close(); conn.close()
-    return {"status": "ok"}
+    conn.commit(); cursor.close(); conn.close(); return {"status": "ok"}
 
 @app.delete("/goals/finance/{id}")
 def deletar_meta_fin(id: int):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
-    cursor.execute("DELETE FROM financial_goals WHERE id=%s;", (id,))
-    conn.commit(); cursor.close(); conn.close()
-    return {"status": "ok"}
+    cursor.execute("DELETE FROM financial_goals WHERE id=%s;", (id,)); conn.commit(); cursor.close(); conn.close(); return {"status": "ok"}
 
-# NOVO ENDPOINT DE MOVIMENTAÇÃO DE METAS (APORTE/RETIRADA)
 @app.post("/goals/finance/{id}/transaction")
 def transacao_meta(id: int, obj: ModeloMetaTransacao):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
-    if obj.type == 'deposit':
-        cursor.execute("UPDATE financial_goals SET current_amount = current_amount + %s WHERE id = %s;", (obj.amount, id))
-    elif obj.type == 'withdrawal':
-        cursor.execute("UPDATE financial_goals SET current_amount = current_amount - %s WHERE id = %s;", (obj.amount, id))
-        
+    if obj.type == 'deposit': cursor.execute("UPDATE financial_goals SET current_amount = current_amount + %s WHERE id = %s;", (obj.amount, id))
+    elif obj.type == 'withdrawal': cursor.execute("UPDATE financial_goals SET current_amount = current_amount - %s WHERE id = %s;", (obj.amount, id))
     cursor.execute("INSERT INTO goal_transactions (goal_id, type, amount, description, date) VALUES (%s, %s, %s, %s, %s);", (id, obj.type, obj.amount, obj.description, obj.date))
-    conn.commit(); cursor.close(); conn.close()
-    return {"status": "ok"}
-
-@app.post("/goals/health")
-def criar_meta_saude(obj: ModeloMetaSaude):
-    daily_goal = ((obj.current_weight - obj.target_weight) * 7700) / (obj.months * 30) if (obj.current_weight - obj.target_weight) > 0 and obj.months > 0 else 400.0
-    conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
-    cursor.execute("INSERT INTO health_goals (user_id, title, dream, current_weight, target_weight, months, daily_calorie_goal) VALUES (%s, %s, %s, %s, %s, %s, %s);", (obj.user_id, obj.title, obj.dream, obj.current_weight, obj.target_weight, obj.months, daily_goal))
-    conn.commit(); cursor.close(); conn.close()
-    return {"status": "ok"}
-
-@app.post("/goals/productivity")
-def criar_meta_prod(obj: ModeloMetaProd):
-    conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
-    cursor.execute("INSERT INTO productivity_goals (user_id, title, dream, months) VALUES (%s, %s, %s, %s);", (obj.user_id, obj.title, obj.dream, obj.months))
-    conn.commit(); cursor.close(); conn.close()
-    return {"status": "ok"}
+    conn.commit(); cursor.close(); conn.close(); return {"status": "ok"}
 
 @app.post("/transactions")
 def salvar_transacao(obj: ModeloTransacao):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
     cursor.execute("INSERT INTO transactions (user_id, type, amount, category, description, date) VALUES (%s, %s, %s, %s, %s, %s);", (obj.user_id, obj.type, obj.amount, obj.category, obj.description, obj.date))
-    conn.commit(); cursor.close(); conn.close()
-    return {"status": "ok"}
+    conn.commit(); cursor.close(); conn.close(); return {"status": "ok"}
 
 @app.put("/transactions/{id}")
 def editar_transacao(id: int, obj: ModeloEdicaoTransacao):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
     cursor.execute("UPDATE transactions SET type=%s, amount=%s, category=%s, description=%s, date=%s WHERE id=%s;", (obj.type, obj.amount, obj.category, obj.description, obj.date, id))
-    conn.commit(); cursor.close(); conn.close()
-    return {"status": "ok"}
+    conn.commit(); cursor.close(); conn.close(); return {"status": "ok"}
 
 @app.delete("/transactions/{id}")
 def deletar_transacao(id: int):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
-    cursor.execute("DELETE FROM transactions WHERE id = %s;", (id,))
+    cursor.execute("DELETE FROM transactions WHERE id = %s;", (id,)); conn.commit(); cursor.close(); conn.close(); return {"status": "ok"}
+
+# --- SAÚDE E ALIMENTAÇÃO ---
+@app.post("/goals/health")
+def criar_meta_saude(obj: ModeloMetaSaude):
+    conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
+    cursor.execute("INSERT INTO health_goals (user_id, title, dream, goal_type, current_amount, target_amount, unit, months) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);", 
+                   (obj.user_id, obj.title, obj.dream, obj.goal_type, obj.current_amount, obj.target_amount, obj.unit, obj.months))
     conn.commit(); cursor.close(); conn.close()
     return {"status": "ok"}
 
-@app.post("/recurring")
-def salvar_recorrente(obj: ModeloRecorrente):
+@app.delete("/goals/health/{id}")
+def deletar_meta_saude(id: int):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
-    cursor.execute("INSERT INTO recurring_expenses (user_id, description, amount, category, due_day) VALUES (%s, %s, %s, %s, %s);", (obj.user_id, obj.description, obj.amount, obj.category, obj.due_day))
-    conn.commit(); cursor.close(); conn.close()
-    return {"status": "ok"}
+    cursor.execute("DELETE FROM health_goals WHERE id=%s;", (id,)); conn.commit(); cursor.close(); conn.close(); return {"status": "ok"}
 
-@app.delete("/recurring/{id}")
-def deletar_recorrente(id: int):
+@app.put("/goals/health/{id}/progress")
+def progredir_meta_saude(id: int, obj: ModeloAporte): # Reuso do ModeloAporte pra progresso simples
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
-    cursor.execute("DELETE FROM recurring_expenses WHERE id = %s;", (id,))
-    conn.commit(); cursor.close(); conn.close()
-    return {"status": "ok"}
+    cursor.execute("UPDATE health_goals SET current_amount = current_amount + %s WHERE id = %s;", (obj.amount, id))
+    conn.commit(); cursor.close(); conn.close(); return {"status": "ok"}
 
 @app.get("/exercises")
 def listar_exercicios():
@@ -176,36 +170,53 @@ def logar_treino(obj: ModeloTreino):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
     cursor.execute("SELECT calories_per_minute FROM exercises WHERE id = %s;", (obj.exercise_id,))
     cal = float(cursor.fetchone()[0]) * obj.duration_minutes
-    cursor.execute("INSERT INTO workout_logs (user_id, exercise_id, duration_minutes, calories_burned, date) VALUES (%s, %s, %s, %s, %s);", (obj.user_id, obj.exercise_id, obj.duration_minutes, cal, obj.date))
+    cursor.execute("INSERT INTO workout_logs (user_id, exercise_id, duration_minutes, distance_km, calories_burned, date) VALUES (%s, %s, %s, %s, %s, %s);", 
+                   (obj.user_id, obj.exercise_id, obj.duration_minutes, obj.distance_km, cal, obj.date))
     conn.commit(); cursor.close(); conn.close()
     return {"status": "ok"}
+
+@app.post("/food")
+def logar_alimento(obj: ModeloAlimento):
+    conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
+    cursor.execute("INSERT INTO food_logs (user_id, description, category, date) VALUES (%s, %s, %s, %s);", (obj.user_id, obj.description, obj.category, obj.date))
+    conn.commit(); cursor.close(); conn.close()
+    return {"status": "ok"}
+
+@app.delete("/food/{id}")
+def deletar_alimento(id: int):
+    conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
+    cursor.execute("DELETE FROM food_logs WHERE id = %s;", (id,)); conn.commit(); cursor.close(); conn.close(); return {"status": "ok"}
+
+# --- PRODUTIVIDADE E DASHBOARD ---
+@app.post("/goals/productivity")
+def criar_meta_prod(obj: ModeloMetaProd):
+    conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
+    cursor.execute("INSERT INTO productivity_goals (user_id, title, dream, months) VALUES (%s, %s, %s, %s);", (obj.user_id, obj.title, obj.dream, obj.months))
+    conn.commit(); cursor.close(); conn.close(); return {"status": "ok"}
 
 @app.get("/tasks/week")
 def listar_tarefas_semana(user_id: int, start: str, end: str):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute("SELECT * FROM tasks WHERE user_id = %s AND date >= %s AND date <= %s ORDER BY date ASC, id ASC;", (user_id, start, end))
-    dados = cursor.fetchall(); cursor.close(); conn.close()
-    return dados
+    dados = cursor.fetchall(); cursor.close(); conn.close(); return dados
 
 @app.post("/tasks")
 def criar_tarefa(obj: ModeloTarefa):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
     cursor.execute("INSERT INTO tasks (user_id, title, date) VALUES (%s, %s, %s);", (obj.user_id, obj.title, obj.date))
-    conn.commit(); cursor.close(); conn.close()
-    return {"status": "ok"}
+    conn.commit(); cursor.close(); conn.close(); return {"status": "ok"}
 
 @app.patch("/tasks/{id}/toggle")
 def alternar_tarefa(id: int):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor()
     cursor.execute("UPDATE tasks SET is_completed = NOT is_completed WHERE id = %s;", (id,))
-    conn.commit(); cursor.close(); conn.close()
-    return {"status": "ok"}
+    conn.commit(); cursor.close(); conn.close(); return {"status": "ok"}
 
 @app.get("/dashboard/unificado")
 def dashboard_unificado(user_id: int, date: str, start_week: str, end_week: str):
     conn = psycopg2.connect(DATABASE_URL); cursor = conn.cursor(cursor_factory=RealDictCursor)
     
-    # Busca Histórico de Metas
+    # Finanças
     cursor.execute("SELECT * FROM goal_transactions ORDER BY date DESC, id DESC;")
     all_gtx = cursor.fetchall()
 
@@ -215,44 +226,41 @@ def dashboard_unificado(user_id: int, date: str, start_week: str, end_week: str)
         m_dict = dict(m)
         m_dict['target_amount'] = float(m_dict['target_amount'])
         m_dict['current_amount'] = float(m_dict['current_amount'])
-        # Anexa o histórico específico dessa meta
         m_dict['history'] = [{"type": tx["type"], "amount": float(tx["amount"]), "description": tx["description"], "date": tx["date"]} for tx in all_gtx if tx["goal_id"] == m["id"]]
         metas_fin.append(m_dict)
     
-    cursor.execute("SELECT * FROM health_goals WHERE user_id = %s ORDER BY id DESC LIMIT 1;", (user_id,))
-    ms = cursor.fetchone()
-    meta_saude = {"title": ms["title"], "dream": ms["dream"], "current_weight": float(ms["current_weight"]), "target_weight": float(ms["target_weight"]), "months": ms["months"], "daily_calorie_goal": float(ms["daily_calorie_goal"])} if ms else None
-    
-    cursor.execute("SELECT * FROM productivity_goals WHERE user_id = %s ORDER BY id DESC LIMIT 1;", (user_id,))
-    mp = cursor.fetchone()
-    meta_prod = {"title": mp["title"], "dream": mp["dream"], "months": mp["months"]} if mp else None
-
     cursor.execute("SELECT * FROM transactions WHERE user_id = %s AND date LIKE %s ORDER BY date DESC, id DESC;", (user_id, date[:7]+'%'))
     transacoes = [{"id": t["id"], "type": t["type"], "amount": float(t["amount"]), "category": t["category"], "description": t["description"], "date": t["date"]} for t in cursor.fetchall()]
-    
-    cursor.execute("SELECT * FROM recurring_expenses WHERE user_id = %s ORDER BY due_day ASC;", (user_id,))
-    recorrentes = [{"id": r["id"], "description": r["description"], "amount": float(r["amount"]), "category": r["category"], "due_day": r["due_day"]} for r in cursor.fetchall()]
 
-    total_income = sum(t['amount'] for t in transacoes if t['type'] == 'income')
-    total_expense = sum(t['amount'] for t in transacoes if t['type'] == 'expense')
+    # Saúde e Alimentação
+    cursor.execute("SELECT * FROM health_goals WHERE user_id = %s ORDER BY id DESC;", (user_id,))
+    metas_saude = [{"id": h["id"], "title": h["title"], "dream": h["dream"], "goal_type": h["goal_type"], "current_amount": float(h["current_amount"]), "target_amount": float(h["target_amount"]), "unit": h["unit"]} for h in cursor.fetchall()]
     
-    cursor.execute("SELECT COALESCE(SUM(calories_burned), 0) AS total_cal FROM workout_logs WHERE user_id = %s AND date = %s;", (user_id, date))
-    cal_hoje = float(cursor.fetchone()['total_cal'])
+    cursor.execute("SELECT * FROM food_logs WHERE user_id = %s AND date LIKE %s ORDER BY id DESC;", (user_id, date[:7]+'%'))
+    comidas = cursor.fetchall()
     
+    cursor.execute("SELECT COALESCE(SUM(calories_burned), 0) AS total_cal, COALESCE(SUM(distance_km), 0) AS total_km FROM workout_logs WHERE user_id = %s AND date LIKE %s;", (user_id, date[:7]+'%'))
+    treinos_mes = cursor.fetchone()
+
+    # Produtividade
+    cursor.execute("SELECT * FROM productivity_goals WHERE user_id = %s ORDER BY id DESC LIMIT 1;", (user_id,))
+    meta_prod = cursor.fetchone()
+
     cursor.execute("SELECT COUNT(*) as qtd FROM tasks WHERE user_id = %s AND date >= %s AND date <= %s;", (user_id, start_week, end_week))
     total_tasks = cursor.fetchone()['qtd']
     cursor.execute("SELECT COUNT(*) as qtd FROM tasks WHERE user_id = %s AND date >= %s AND date <= %s AND is_completed = TRUE;", (user_id, start_week, end_week))
     completed_tasks = cursor.fetchone()['qtd']
+    
     cursor.close(); conn.close()
     
+    total_income = sum(t['amount'] for t in transacoes if t['type'] == 'income')
+    total_expense = sum(t['amount'] for t in transacoes if t['type'] == 'expense')
     prog_financas = 100.0 if total_expense == 0 else max(0.0, 100.0 - ((total_expense / (total_income if total_income > 0 else 3000.0)) * 100.0))
-    prog_saude = min((cal_hoje / float(meta_saude['daily_calorie_goal'])) * 100.0, 100.0) if meta_saude else 0.0
     prog_produtividade = (completed_tasks / total_tasks * 100.0) if total_tasks > 0 else 0.0
-    engajamento_global = (prog_financas + prog_saude + prog_produtividade) / 3.0
-
+    
     return {
-        "financas": {"saldo": total_income - total_expense, "rendas": total_income, "gastos": total_expense, "metas": metas_fin, "progresso": prog_financas, "transacoes": transacoes, "recorrentes": recorrentes},
-        "saude": {"meta": meta_saude, "calorias_hoje": cal_hoje, "progresso": prog_saude},
+        "financas": {"saldo": total_income - total_expense, "rendas": total_income, "gastos": total_expense, "metas": metas_fin, "progresso": prog_financas, "transacoes": transacoes},
+        "saude": {"metas": metas_saude, "treinos_mes": {"calorias": float(treinos_mes['total_cal']), "kms": float(treinos_mes['total_km'])}, "comidas": comidas},
         "produtividade": {"meta": meta_prod, "progresso": prog_produtividade},
-        "global_pct": engajamento_global
+        "global_pct": (prog_financas + prog_produtividade) / 2.0  # Simplificado pro MVP
     }

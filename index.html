@@ -7,7 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg-color: #09090b; --card-bg: #131418; --text-color: #f4f4f5; --text-muted: #a1a1aa; --border-color: #27272a; --fin-color: #3b82f6; --sau-color: #10b981; --pro-color: #8b5cf6; --danger-color: #ef4444; --success-color: #10b981;}
+        :root { --bg-color: #09090b; --card-bg: #131418; --text-color: #f4f4f5; --text-muted: #a1a1aa; --border-color: #27272a; --fin-color: #3b82f6; --sau-color: #10b981; --pro-color: #8b5cf6; --danger-color: #ef4444; --success-color: #10b981; --ai-color: #06b6d4;}
         * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-color); margin: 0; display: flex; justify-content: center; padding-bottom: 100px; }
         .app-container { width: 100%; max-width: 500px; padding: 15px; }
@@ -18,15 +18,16 @@
         .bg-global { background: linear-gradient(90deg, var(--fin-color), var(--sau-color), var(--pro-color)); }
         .bg-fin { background: var(--fin-color); } .bg-sau { background: var(--sau-color); } .bg-pro { background: var(--pro-color); }
         .bg-danger { background: var(--danger-color) !important; }
-        
-        .text-danger { color: var(--danger-color) !important; }
-        .text-success { color: var(--success-color) !important; }
+        .text-danger { color: var(--danger-color) !important; } .text-success { color: var(--success-color) !important; }
 
         .btn { width: 100%; padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; border: none; transition: 0.2s; margin-top: 10px; color: white;}
         .btn-fin { background: var(--fin-color); } .btn-sau { background: var(--sau-color); } .btn-pro { background: var(--pro-color); }
+        .btn-ai { background: linear-gradient(90deg, var(--sau-color), var(--ai-color)); animation: pulse 2s infinite; }
         .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); }
         .btn-small { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center;}
         
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(6, 182, 212, 0); } 100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); } }
+
         .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
         .form-group label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
         .form-group input, .form-group select, .form-group textarea { background: #18191c; border: 1px solid #33353b; padding: 12px; border-radius: 10px; color: white; font-size: 14px; width: 100%; resize: vertical;}
@@ -49,6 +50,7 @@
         .task-item { display: flex; justify-content: space-between; align-items: center; background: #18191c; padding: 10px; border-radius: 8px; margin-bottom: 6px; border: 1px solid #2a2c32; font-size: 13px;}
         .task-item.completed { opacity: 0.5; text-decoration: line-through; }
         .meta-card { background: #18191c; padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 10px; }
+        .vision-box { background: rgba(255,255,255,0.05); border-left: 3px solid var(--fin-color); padding: 12px; border-radius: 8px; margin-bottom: 15px; font-style: italic; font-size: 13px; color: #d4d4d8; font-weight: 600; line-height: 1.5;}
         
         .nav-inferior { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); width: calc(100% - 30px); max-width: 470px; background: rgba(19, 20, 24, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px; border-radius: 20px; z-index: 100;}
         .nav-item { background: transparent; border: none; color: var(--text-muted); font-size: 12px; font-weight: 700; cursor: pointer; padding: 8px 12px; border-radius: 10px; transition: 0.2s; }
@@ -119,10 +121,27 @@
         </section>
 
         <section id="aba-saude" class="escondido">
-            
+            <div class="card">
+                <h3 style="margin-top:0; color: var(--sau-color);">🔋 Sua Bateria Biológica</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top: 15px;">
+                    <div style="background: #18191c; border: 1px solid #2a2c32; padding: 15px; border-radius: 12px; text-align: center;">
+                        <span style="font-size: 20px;">💧</span><br>
+                        <span style="font-size: 11px; color: var(--text-muted);">Água Hoje</span><br>
+                        <strong style="font-size: 16px; color: #3b82f6;" id="lbl-agua">0 ml</strong>
+                        <button class="btn-outline btn-small" style="margin: 8px auto 0 auto; width: 100%; border-color: #3b82f6;" onclick="adicionarAgua()">+ 250ml</button>
+                    </div>
+                    <div style="background: #18191c; border: 1px solid #2a2c32; padding: 15px; border-radius: 12px; text-align: center;">
+                        <span style="font-size: 20px;">💤</span><br>
+                        <span style="font-size: 11px; color: var(--text-muted);">Sono (Noite)</span><br>
+                        <strong style="font-size: 16px; color: #8b5cf6;" id="lbl-sono">0 hrs</strong>
+                        <button class="btn-outline btn-small" style="margin: 8px auto 0 auto; width: 100%; border-color: #8b5cf6;" onclick="abrirModal('modal-sono')">Logar Sono</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 style="margin:0; color: var(--sau-color);">🏆 Metas Físicas</h3>
+                    <h3 style="margin:0;">🏆 Metas Físicas</h3>
                     <button class="btn-outline btn-small" style="color:white; border-color: var(--sau-color);" onclick="abrirModal('modal-meta-saude')">+ Nova Meta</button>
                 </div>
                 <div id="lista-metas-saude"></div>
@@ -130,26 +149,40 @@
             
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <h3 style="margin:0;">🥗 Diário Alimentar (Mês)</h3>
-                    <button class="btn-outline btn-small" onclick="prepararNovoAlimento()">+ Lançar</button>
+                    <h3 style="margin:0;">🥗 Diário Nutricional</h3>
+                    <button class="btn-outline btn-small" onclick="prepararNovoAlimento()">+ Manual</button>
                 </div>
+                <button class="btn btn-ai" style="margin-bottom: 20px;" onclick="simularScannerIA()">📸 Scan IA do Prato (Beta)</button>
+                
+                <p style="font-size: 12px; font-weight:bold; margin: 15px 0 5px 0;">Densidade Nutricional (Qualidade):</p>
+                <div class="prog-container"><div class="prog-fill bg-sau" id="barra-nutricao" style="width: 0%;"></div></div>
+                <p style="font-size: 11px; color: var(--text-muted); font-style: italic; margin-bottom: 20px;">Alimentos ricos vs. Calorias vazias</p>
+
                 <div style="position: relative; height: 180px; width: 100%; margin-bottom: 20px;"><canvas id="foodChart"></canvas></div>
                 <div id="ranking-comidas" style="margin-bottom: 10px;"></div>
                 <div id="lista-comidas" style="max-height: 250px; overflow-y: auto;"></div>
             </div>
 
             <div class="card">
-                <h3 style="margin-top:0;">🏃 Registrar Atividade Hoje</h3>
-                <div class="form-group"><label>O que você fez hoje?</label><select id="saude-exercicio"></select></div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin:0;">🏃 Registrar Treino</h3>
+                    <button class="btn-outline btn-small" style="color: var(--ai-color); border-color: var(--ai-color);" onclick="simularTreinadorIA()">🤖 Treinador IA</button>
+                </div>
+                <div class="form-group"><label>Exercício:</label><select id="saude-exercicio"></select></div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;">
                     <div class="form-group"><label>Tempo (Min):</label><input type="number" id="saude-tempo" placeholder="40"></div>
                     <div class="form-group"><label>Distância (Km) *Opcional:</label><input type="number" id="saude-distancia" placeholder="5.5" step="0.1"></div>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 12px; color: var(--text-muted);">
-                    <span>🔥 Queimou: <span id="lbl-cal-hoje" style="color: var(--sau-color); font-weight:bold;">0</span> kcal hoje</span>
-                    <span>📍 Percorreu: <span id="lbl-km-hoje" style="color: white; font-weight:bold;">0</span> km hoje</span>
+                <div class="form-group" style="margin-top: 5px;">
+                    <label>Percepção de Esforço (1 Fácil a 10 Falha):</label>
+                    <input type="range" id="saude-rpe" min="1" max="10" value="5" oninput="document.getElementById('lbl-rpe').innerText = this.value">
+                    <span style="font-size: 12px; text-align: center; color: var(--fin-color); font-weight: bold;">RPE: <span id="lbl-rpe">5</span></span>
                 </div>
-                <button class="btn btn-sau" onclick="salvarTreino()">Registrar Esforço</button>
+                <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 12px; color: var(--text-muted);">
+                    <span>🔥 Hoje: <span id="lbl-cal-hoje" style="color: var(--sau-color); font-weight:bold;">0</span> kcal</span>
+                    <span>📍 Hoje: <span id="lbl-km-hoje" style="color: white; font-weight:bold;">0</span> km</span>
+                </div>
+                <button class="btn btn-sau" onclick="salvarTreino()">Registrar Esforço Real</button>
             </div>
         </section>
 
@@ -173,50 +206,49 @@
     </div>
 </div>
 
-<div id="modal-transacao" class="modal-overlay escondido"><div class="modal-content"><h3 id="transacao-modal-title">Nova Transação</h3><input type="hidden" id="fin-id"><div class="form-group"><label>Data:</label><input type="date" id="fin-date"></div><div class="form-group"><label>Tipo de Lançamento:</label><select id="fin-type" onchange="atualizarCategoriasSelect()"><option value="expense">Despesa (Saída)</option><option value="income">Renda (Entrada)</option></select></div><div class="form-group"><label>Valor (R$):</label><input type="number" id="fin-amount" placeholder="0.00" step="0.01"></div><div class="form-group"><label>Descrição / Origem:</label><input type="text" id="fin-desc"></div><div class="form-group"><label>Categoria:</label><select id="fin-category"></select></div><button class="btn btn-fin" onclick="salvarTransacao()">Salvar</button><button class="btn btn-outline" onclick="fecharModal('modal-transacao')">Cancelar</button></div></div>
-<div id="modal-recorrente" class="modal-overlay escondido"><div class="modal-content"><h3>Novo Gasto Fixo</h3><div class="form-group"><label>Descrição:</label><input type="text" id="rec-desc"></div><div class="form-group"><label>Valor (R$):</label><input type="number" id="rec-amount" step="0.01"></div><div class="form-group"><label>Dia do Vencimento:</label><input type="number" id="rec-day" min="1" max="31"></div><div class="form-group"><label>Categoria:</label><select id="rec-category"><option value="Moradia">Moradia</option><option value="Educação">Educação</option><option value="Assinaturas">Assinaturas</option><option value="Outros">Outros</option></select></div><button class="btn btn-fin" onclick="salvarRecorrente()">Salvar Fixo</button><button class="btn btn-outline" onclick="fecharModal('modal-recorrente')">Cancelar</button></div></div>
-<div id="modal-meta-fin" class="modal-overlay escondido"><div class="modal-content"><h3 id="meta-fin-modal-title">Sua Meta Financeira</h3><input type="hidden" id="meta-fin-id"><div class="form-group"><label>Título (Ex: Casa):</label><input type="text" id="meta-fin-titulo"></div><div class="form-group"><label>Detalhe seu sonho:</label><textarea id="meta-fin-dream" rows="2"></textarea></div><div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div class="form-group"><label>Valor Total (R$):</label><input type="number" id="meta-fin-valor"></div><div class="form-group"><label>Já guardado (R$):</label><input type="number" id="meta-fin-atual"></div></div><div class="form-group"><label>Em quantos meses?</label><input type="number" id="meta-fin-meses" placeholder="12"></div><button class="btn btn-fin" onclick="salvarMetaFin()">Firmar Compromisso</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-fin')">Cancelar</button></div></div>
+<div id="modal-transacao" class="modal-overlay escondido"><div class="modal-content"><h3 id="transacao-modal-title">Nova Transação</h3><input type="hidden" id="fin-id"><div class="form-group"><label>Data:</label><input type="date" id="fin-date"></div><div class="form-group"><label>Tipo de Lançamento:</label><select id="fin-type" onchange="atualizarCategoriasSelect()"><option value="expense">Despesa (Saída)</option><option value="income">Renda (Entrada)</option></select></div><div class="form-group"><label>Valor (R$):</label><input type="number" id="fin-amount" placeholder="0.00" step="0.01"></div><div class="form-group"><label>Descrição:</label><input type="text" id="fin-desc"></div><div class="form-group"><label>Categoria:</label><select id="fin-category"></select></div><button class="btn btn-fin" onclick="salvarTransacao()">Salvar</button><button class="btn btn-outline" onclick="fecharModal('modal-transacao')">Cancelar</button></div></div>
+<div id="modal-recorrente" class="modal-overlay escondido"><div class="modal-content"><h3>Novo Gasto Fixo</h3><div class="form-group"><label>Descrição:</label><input type="text" id="rec-desc"></div><div class="form-group"><label>Valor (R$):</label><input type="number" id="rec-amount" step="0.01"></div><div class="form-group"><label>Dia Vencimento:</label><input type="number" id="rec-day" min="1" max="31"></div><div class="form-group"><label>Categoria:</label><select id="rec-category"><option value="Moradia">Moradia</option><option value="Educação">Educação</option><option value="Assinaturas">Assinaturas</option><option value="Outros">Outros</option></select></div><button class="btn btn-fin" onclick="salvarRecorrente()">Salvar Fixo</button><button class="btn btn-outline" onclick="fecharModal('modal-recorrente')">Cancelar</button></div></div>
+<div id="modal-meta-fin" class="modal-overlay escondido"><div class="modal-content"><h3 id="meta-fin-modal-title">Sua Meta Financeira</h3><input type="hidden" id="meta-fin-id"><div class="form-group"><label>Título:</label><input type="text" id="meta-fin-titulo"></div><div class="form-group"><label>Sonho:</label><textarea id="meta-fin-dream" rows="2"></textarea></div><div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div class="form-group"><label>Valor Total (R$):</label><input type="number" id="meta-fin-valor"></div><div class="form-group"><label>Já guardado (R$):</label><input type="number" id="meta-fin-atual"></div></div><div class="form-group"><label>Meses?</label><input type="number" id="meta-fin-meses"></div><button class="btn btn-fin" onclick="salvarMetaFin()">Firmar Compromisso</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-fin')">Cancelar</button></div></div>
 <div id="modal-meta-tx" class="modal-overlay escondido"><div class="modal-content"><h3>Movimentar Sonho</h3><input type="hidden" id="meta-tx-id"><div class="form-group"><label>Ação:</label><select id="meta-tx-type"><option value="deposit">Aporte (+ Guardar)</option><option value="withdrawal">Retirada (- Sacar)</option></select></div><div class="form-group"><label>Data:</label><input type="date" id="meta-tx-date"></div><div class="form-group"><label>Valor (R$):</label><input type="number" id="meta-tx-amount" step="0.01"></div><div class="form-group"><label>Motivo:</label><input type="text" id="meta-tx-desc"></div><button class="btn btn-fin" onclick="salvarTransacaoMeta()">Lançar na Meta</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-tx')">Cancelar</button></div></div>
 
 <div id="modal-meta-saude" class="modal-overlay escondido">
     <div class="modal-content">
         <h3>Criar Meta Física</h3>
         <div class="form-group">
-            <label>Tipo de Meta:</label>
+            <label>Qual é a sua busca?</label>
             <select id="meta-sau-type">
-                <option value="weight">Emagrecer / Engordar (Balança)</option>
-                <option value="distance_run">Correr Distância (Maratona)</option>
-                <option value="distance_swim">Natação Distância</option>
-                <option value="other">Outro Foco de Esporte</option>
+                <option value="weight">Alteração de Peso Corporal</option>
+                <option value="distance_run">Corrida / Maratona</option>
+                <option value="distance_swim">Natação</option>
+                <option value="distance_cycle">Ciclismo</option>
+                <option value="other">Outra Performance</option>
             </select>
         </div>
-        <div class="form-group"><label>Título (Ex: Meia Maratona):</label><input type="text" id="meta-sau-titulo"></div>
-        <div class="form-group"><label>Detalhe seu objetivo:</label><textarea id="meta-sau-dream" rows="2"></textarea></div>
+        <div class="form-group"><label>Título (Ex: Correr a São Silvestre):</label><input type="text" id="meta-sau-titulo"></div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <div class="form-group"><label>Valor Atual:</label><input type="number" id="meta-sau-atual" step="0.1"></div>
-            <div class="form-group"><label>Valor Desejado:</label><input type="number" id="meta-sau-alvo" step="0.1"></div>
+            <div class="form-group"><label>Valor Inicial:</label><input type="number" id="meta-sau-atual" step="0.1"></div>
+            <div class="form-group"><label>Valor Alvo:</label><input type="number" id="meta-sau-alvo" step="0.1"></div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <div class="form-group"><label>Unidade de Medida:</label><select id="meta-sau-unit"><option value="kg">kg</option><option value="km">km</option><option value="aulas">Aulas</option></select></div>
-            <div class="form-group"><label>Meses de Foco:</label><input type="number" id="meta-sau-meses"></div>
+            <div class="form-group"><label>Unidade:</label><select id="meta-sau-unit"><option value="kg">kg</option><option value="km">km</option><option value="metros">metros</option></select></div>
+            <div class="form-group"><label>Meses:</label><input type="number" id="meta-sau-meses"></div>
         </div>
-        <button class="btn btn-sau" onclick="salvarMetaSaude()">Registrar Meta</button>
+        <button class="btn btn-sau" onclick="salvarMetaSaude()">Registrar Meta Esportiva</button>
         <button class="btn btn-outline" onclick="fecharModal('modal-meta-saude')">Cancelar</button>
     </div>
 </div>
 
 <div id="modal-alimento" class="modal-overlay escondido">
     <div class="modal-content">
-        <h3>Lançar Refeição</h3>
-        <div class="form-group"><label>O que comeu?</label><input type="text" id="food-desc" placeholder="Ex: Salada de Frango"></div>
+        <h3>Lançar Refeição Manual</h3>
+        <div class="form-group"><label>O que comeu?</label><input type="text" id="food-desc" placeholder="Ex: Salada com Frango"></div>
         <div class="form-group">
-            <label>Classificação:</label>
+            <label>Qualidade Nutricional:</label>
             <select id="food-cat">
-                <option value="Saudável/Natural">🥗 Saudável / Natural</option>
-                <option value="Carboidrato Simples">🍞 Carboidrato Simples</option>
-                <option value="Doce/Açúcar">🍫 Doce / Açúcar</option>
-                <option value="Fast Food/Fritura">🍔 Fast Food / Fritura</option>
-                <option value="Bebida Alcóolica">🍺 Bebida Alcóolica</option>
+                <option value="Saudável/Natural|100">🥗 Saudável / Natural (Score Alto)</option>
+                <option value="Carboidrato Simples|50">🍞 Carboidrato Simples (Score Médio)</option>
+                <option value="Doce/Açúcar|10">🍫 Doce / Açúcar (Caloria Vazia)</option>
+                <option value="Fast Food/Fritura|5">🍔 Fast Food / Fritura (Caloria Vazia)</option>
             </select>
         </div>
         <button class="btn btn-sau" onclick="salvarAlimento()">Adicionar ao Diário</button>
@@ -224,11 +256,20 @@
     </div>
 </div>
 
+<div id="modal-sono" class="modal-overlay escondido">
+    <div class="modal-content">
+        <h3>Qualidade da Bateria Biológica</h3>
+        <div class="form-group"><label>Quantas horas dormiu na última noite?</label><input type="number" id="sono-horas" step="0.5"></div>
+        <div class="form-group"><label>Como você acordou?</label><select id="sono-qualidade"><option value="Excelente">Revigorado (Top)</option><option value="Regular">Normal</option><option value="Ruim">Cansado/Exausto</option></select></div>
+        <button class="btn" style="background:#8b5cf6;" onclick="salvarBiometria('sono')">Atualizar Bateria</button>
+        <button class="btn btn-outline" onclick="fecharModal('modal-sono')">Cancelar</button>
+    </div>
+</div>
+
 <div id="modal-meta-prod" class="modal-overlay escondido"><div class="modal-content"><h3>Qual o seu Propósito?</h3><div class="form-group"><label>Título:</label><input type="text" id="meta-pro-titulo"></div><div class="form-group"><label>Por que quer organizar a rotina?</label><textarea id="meta-pro-dream" rows="2"></textarea></div><div class="form-group"><label>Em quantos meses?</label><input type="number" id="meta-pro-meses"></div><button class="btn btn-pro" onclick="salvarMetaProd()">Salvar Propósito</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-prod')">Cancelar</button></div></div>
 
 <script>
-    const v = new Date().getTime(); 
-    document.write('<script src="app.js?v=' + v + '"><\/script>');
+    const v = new Date().getTime(); document.write('<script src="app.js?v=' + v + '"><\/script>');
 </script>
 </body>
 </html>

@@ -1,11 +1,12 @@
 const API_URL = "https://phisland.onrender.com"; 
 
 let dataHoje = new Date();
-const hojeStr = dataHoje.toISOString().split('T')[0];
+let hojeStr = dataHoje.toISOString().split('T')[0];
 
 let startOfWeek = new Date(dataHoje); startOfWeek.setDate(dataHoje.getDate() - (dataHoje.getDay() === 0 ? 6 : dataHoje.getDay() - 1));
 let endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + 6);
-const startStr = startOfWeek.toISOString().split('T')[0]; const endStr = endOfWeek.toISOString().split('T')[0];
+let startStr = startOfWeek.toISOString().split('T')[0]; 
+let endStr = endOfWeek.toISOString().split('T')[0];
 
 let financeChartInstance = null; let foodChartInstance = null; let moodChartInstance = null;
 let currentTransactions = []; let currentCategoryFilter = null; let currentHistoryTab = 'all';
@@ -18,7 +19,7 @@ const iconExpense = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none"
 
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('filtro-mes-fin').value = `${dataHoje.getFullYear()}-${(dataHoje.getMonth()+1).toString().padStart(2,'0')}`;
-    document.getElementById('fin-date').value = hojeStr;
+    document.getElementById('global-date-picker').value = hojeStr;
 
     const userIdSalvo = localStorage.getItem("user_id");
     if (userIdSalvo) {
@@ -27,12 +28,24 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('lbl-boas-vindas').innerText = localStorage.getItem("user_nickname");
         document.getElementById('print-name').innerText = localStorage.getItem("user_nickname");
         
-        // Mantem o usuario na mesma aba quando der F5
         const activeTab = localStorage.getItem('active_tab') || 'financas';
         navegar(activeTab); 
         recarregarTudo(); carregarCatalogoExercicios();
     }
 });
+
+// 🚨 MÁQUINA DO TEMPO (Alterar Data do App Global)
+function mudarDataGlobal(novaData) {
+    if(!novaData) return;
+    hojeStr = novaData;
+    let d = new Date(novaData + "T00:00:00");
+    let day = d.getDay();
+    startOfWeek = new Date(d); startOfWeek.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+    endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + 6);
+    startStr = startOfWeek.toISOString().split('T')[0];
+    endStr = endOfWeek.toISOString().split('T')[0];
+    recarregarTudo(); // Atualiza tudo para esse dia
+}
 
 function setBtnLoading(btnId, isLoading) {
     let btn = document.getElementById(btnId); if(!btn) return;
@@ -69,7 +82,7 @@ function navegar(aba) {
 function abrirModal(id) { document.getElementById(id).classList.remove('escondido'); }
 function fecharModal(id) { document.getElementById(id).classList.add('escondido'); }
 
-// ================= MOTOR DE REATIVIDADE =================
+// ================= MOTOR DE REATIVIDADE CENTRAL =================
 async function recarregarTudo() {
     const user_id = localStorage.getItem("user_id"); if(!user_id) return;
     let selectedMonth = document.getElementById('filtro-mes-fin').value || `${dataHoje.getFullYear()}-${(dataHoje.getMonth()+1).toString().padStart(2,'0')}`;
@@ -78,7 +91,7 @@ async function recarregarTudo() {
         const res = await fetch(`${API_URL}/dashboard/unificado?user_id=${user_id}&date=${selectedMonth}-01&hoje=${hojeStr}&start_week=${startStr}&end_week=${endStr}`);
         if(!res.ok) return; const data = await res.json();
         
-        // --- 🧠 MENTAL E TAREFAS ---
+        // --- 🧠 MENTAL E TAREFAS INTELIGENTES ---
         renderizarPlannerInteligente(data.mental.tasks || []); 
         renderizarGraficoHumor(data.mental.history);
         prepararRelatorioTCC(data.mental.journals);
@@ -87,7 +100,8 @@ async function recarregarTudo() {
         
         // --- 🏋️ SAÚDE ---
         workoutPlansGlobal = data.saude.workout_plans || [];
-        selecionarDiaTreino(dataHoje.getDay() === 0 ? 0 : dataHoje.getDay(), null);
+        let dDate = new Date(hojeStr + "T00:00:00");
+        selecionarDiaTreino(dDate.getDay() === 0 ? 0 : dDate.getDay(), null);
         
         if(data.saude.biometria) {
             let water = data.saude.biometria.water_ml; let sleep = data.saude.biometria.sleep_hours;
@@ -127,12 +141,12 @@ async function recarregarTudo() {
         let basalEst = 2000; let caloriasQueimadas = data.saude.treinos_hoje.calorias; let saldoEnergetico = basalEst - caloriasIngeridas + caloriasQueimadas;
         if(document.getElementById('lbl-cal-restantes')) { document.getElementById('lbl-cal-restantes').innerText = Math.round(saldoEnergetico) + " kcal"; if(saldoEnergetico < 0) document.getElementById('lbl-cal-restantes').style.color = "var(--danger-color)"; else document.getElementById('lbl-cal-restantes').style.color = "white"; }
         
-        let exerciciosPlanejadosHoje = workoutPlansGlobal.filter(p => p.day_of_week === (dataHoje.getDay()===0 ? 0 : dataHoje.getDay())).length;
+        let exerciciosPlanejadosHoje = workoutPlansGlobal.filter(p => p.day_of_week === (dDate.getDay()===0 ? 0 : dDate.getDay())).length;
         if(document.getElementById('health-feedback-box')) {
             if(exerciciosPlanejadosHoje > 0 && caloriasQueimadas > 0) {
                 document.getElementById('health-feedback-box').classList.remove('escondido'); document.getElementById('health-feedback-text').innerHTML = `💡 <strong>Performance:</strong> Você cumpriu seu treino planejado. Continue assim!`;
             } else if (exerciciosPlanejadosHoje > 0) {
-                document.getElementById('health-feedback-box').classList.remove('escondido'); document.getElementById('health-feedback-text').innerHTML = `⏳ <strong>Lembrete:</strong> Você tem ${exerciciosPlanejadosHoje} exercícios planejados para hoje. Registre seu esforço!`;
+                document.getElementById('health-feedback-box').classList.remove('escondido'); document.getElementById('health-feedback-text').innerHTML = `⏳ <strong>Lembrete:</strong> Você tem ${exerciciosPlanejadosHoje} exercícios planejados para esta data. Registre seu esforço!`;
             } else { document.getElementById('health-feedback-box').classList.add('escondido'); }
         }
 
@@ -148,7 +162,7 @@ async function recarregarTudo() {
     } catch (e) { console.error("Aviso:", e); }
 }
 
-// ================= PLANNER: TIMELINE & RECORRÊNCIA =================
+// ================= PLANNER: TIMELINE & RECORRÊNCIA CORRIGIDA =================
 async function renderizarPlannerInteligente(tarefasFallback) {
     const c = document.getElementById('planner-semanal'); if(!c) return;
     let tarefas = [];
@@ -159,22 +173,25 @@ async function renderizarPlannerInteligente(tarefasFallback) {
     let sugeriu = false;
     
     for(let i=0; i<7; i++) {
-        let d = new Date(startOfWeek); d.setDate(startOfWeek.getDate() + i); 
+        let d = new Date(startOfWeek + "T00:00:00"); d.setDate(new Date(startOfWeek + "T00:00:00").getDate() + i); 
         let loopStr = d.toISOString().split('T')[0]; let isHoje = loopStr === hojeStr;
         
-        let tarefasDoDia = tarefas.filter(t => t.date === loopStr || (t.is_recurring && new Date(t.date) <= new Date(loopStr)));
+        // Traz tarefas da data ou as fixas
+        let tarefasDoDia = tarefas.filter(t => t.date === loopStr || (t.is_recurring && new Date(t.date + "T00:00:00") <= new Date(loopStr + "T00:00:00")));
         tarefasDoDia.sort((a,b) => (a.time_str || '23:59').localeCompare(b.time_str || '23:59'));
         
-        let pendentes = tarefasDoDia.filter(t => !t.is_completed).length;
+        // 🚨 VERIFICA SE FOI CONCLUIDA NESTA DATA ESPECIFICA!
+        let pendentes = tarefasDoDia.filter(t => !(t.completed_dates && t.completed_dates.includes(loopStr))).length;
         let statusTexto = pendentes > 0 ? `<span style="color:var(--danger-color);">${pendentes} pendente(s)</span>` : `<span style="color:var(--text-muted);">Tudo feito</span>`;
         if(tarefasDoDia.length === 0) statusTexto = `<span style="color:var(--text-muted);">Livre</span>`;
 
         let htmlTarefas = tarefasDoDia.map(t => {
+            let isCompleted = t.completed_dates && t.completed_dates.includes(loopStr);
             let tagColor = t.tag === 'Mental' ? 'var(--men-color)' : (t.tag === 'Físico' ? 'var(--sau-color)' : (t.tag === 'Trabalho' ? 'var(--pro-color)' : 'var(--text-muted)'));
             let isPesada = t.mental_load >= 4; let classPesada = isPesada ? 'task-pesada' : '';
-            if (isHoje && !sugeriu && !t.is_completed && !isCaotico && estadoHumorAtual.includes('Calmo') && t.mental_load <= 3) { document.getElementById('acao-sugerida-box').classList.remove('escondido'); document.getElementById('acao-sugerida-text').innerHTML = `Você parece calmo. Ótimo momento para riscar: <strong>${t.title}</strong>.`; sugeriu = true; }
+            if (isHoje && !sugeriu && !isCompleted && !isCaotico && estadoHumorAtual.includes('Calmo') && t.mental_load <= 3) { document.getElementById('acao-sugerida-box').classList.remove('escondido'); document.getElementById('acao-sugerida-text').innerHTML = `Você parece calmo. Ótimo momento para riscar: <strong>${t.title}</strong>.`; sugeriu = true; }
 
-            return `<div class="timeline-item ${classPesada}">${t.time_str ? `<div class="timeline-time">${t.time_str}</div>` : ''}<div class="task-item ${t.is_completed ? 'completed' : ''}" style="margin:0;"><div style="display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="toggleTarefa(${t.id}, event)"><div style="width:16px; height:16px; border-radius:4px; border:2px solid ${t.is_completed?'gray':'var(--pro-color)'}; background:${t.is_completed?'gray':'transparent'}; display:flex; align-items:center; justify-content:center;">${t.is_completed ? '<span style="color:white; font-size:10px;">✔</span>' : ''}</div><div style="display:flex; flex-direction:column;"><span style="font-weight:600; font-size:14px; color:${t.is_completed?'gray':'white'};">${t.title}</span><div style="display:flex; gap:5px; font-size:10px; margin-top:2px;"><span style="background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; color:${tagColor};">${t.tag || 'Geral'}</span><span style="color:#f59e0b;">${'⭐'.repeat(t.mental_load || 1)}</span>${t.is_recurring ? '<span style="color:var(--text-muted);">🔄 Fixo</span>' : ''}</div></div></div></div></div>`;
+            return `<div class="timeline-item ${classPesada}">${t.time_str ? `<div class="timeline-time">${t.time_str}</div>` : ''}<div class="task-item ${isCompleted ? 'completed' : ''}" style="margin:0;"><div style="display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="toggleTarefa(${t.id}, '${loopStr}', event)"><div style="width:16px; height:16px; border-radius:4px; border:2px solid ${isCompleted?'gray':'var(--pro-color)'}; background:${isCompleted?'gray':'transparent'}; display:flex; align-items:center; justify-content:center;">${isCompleted ? '<span style="color:white; font-size:10px;">✔</span>' : ''}</div><div style="display:flex; flex-direction:column;"><span style="font-weight:600; font-size:14px; color:${isCompleted?'gray':'white'};">${t.title}</span><div style="display:flex; gap:5px; font-size:10px; margin-top:2px;"><span style="background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; color:${tagColor};">${t.tag || 'Geral'}</span><span style="color:#f59e0b;">${'⭐'.repeat(t.mental_load || 1)}</span>${t.is_recurring ? '<span style="color:var(--text-muted);">🔄 Fixo</span>' : ''}</div></div></div></div></div>`;
         }).join('');
 
         let displayContent = isHoje ? 'block' : 'none'; let borderColor = isHoje ? 'var(--pro-color)' : 'var(--border-color)';
@@ -185,9 +202,21 @@ async function renderizarPlannerInteligente(tarefasFallback) {
 }
 
 function abrirModalTarefa(data) { document.getElementById('task-date').value = data; document.getElementById('task-title').value = ""; document.getElementById('task-time').value = ""; document.getElementById('task-recurring').checked = false; abrirModal('modal-nova-tarefa'); }
-async function salvarTarefaNova() { const obj = { user_id: parseInt(localStorage.getItem("user_id")), title: document.getElementById('task-title').value.trim(), date: document.getElementById('task-date').value, tag: document.getElementById('task-tag').value, mental_load: parseInt(document.getElementById('task-load').value), time_str: document.getElementById('task-time').value, is_recurring: document.getElementById('task-recurring').checked }; if(!obj.title) return; await fetch(`${API_URL}/tasks`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) }); fecharModal('modal-nova-tarefa'); recarregarTudo(); }
-async function toggleTarefa(id, event) { const el = event.currentTarget; const isAlreadyCompleted = el.parentElement.classList.contains('completed'); if(!isAlreadyCompleted) { let rect = el.getBoundingClientRect(); let x = (rect.left + (rect.width / 2)) / window.innerWidth; let y = (rect.top + (rect.height / 2)) / window.innerHeight; confetti({ particleCount: 50, spread: 60, origin: { x: x, y: y }, colors: ['#8b5cf6', '#10b981', '#3b82f6'] }); } await fetch(`${API_URL}/tasks/${id}/toggle`, { method: 'PATCH' }); recarregarTudo(); }
-function toggleDiaCaotico(checkbox) { const appBody = document.getElementById('app-body'); if(checkbox.checked) { appBody.classList.add('app-caotico'); alert("🌪️ Dia Caótico Ativado.\n\nTarefas com Carga Mental Alta (4 a 5 estrelas) foram ofuscadas.\nNão se culpe. Faremos apenas o essencial hoje."); } else { appBody.classList.remove('app-caotico'); } recarregarTudo(); }
+async function salvarTarefaNova() {
+    const obj = { user_id: parseInt(localStorage.getItem("user_id")), title: document.getElementById('task-title').value.trim(), date: document.getElementById('task-date').value, tag: document.getElementById('task-tag').value, mental_load: parseInt(document.getElementById('task-load').value), time_str: document.getElementById('task-time').value, is_recurring: document.getElementById('task-recurring').checked };
+    if(!obj.title) return; await fetch(`${API_URL}/tasks`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) }); fecharModal('modal-nova-tarefa'); recarregarTudo(); 
+}
+async function toggleTarefa(id, dateStr, event) { 
+    const el = event.currentTarget; const isAlreadyCompleted = el.parentElement.classList.contains('completed');
+    if(!isAlreadyCompleted) { let rect = el.getBoundingClientRect(); let x = (rect.left + (rect.width / 2)) / window.innerWidth; let y = (rect.top + (rect.height / 2)) / window.innerHeight; confetti({ particleCount: 50, spread: 60, origin: { x: x, y: y }, colors: ['#8b5cf6', '#10b981', '#3b82f6'] }); }
+    await fetch(`${API_URL}/tasks/${id}/toggle`, { method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({date: dateStr}) }); recarregarTudo(); 
+}
+
+function toggleDiaCaotico(checkbox) {
+    const appBody = document.getElementById('app-body');
+    if(checkbox.checked) { appBody.classList.add('app-caotico'); alert("🌪️ Dia Caótico Ativado.\n\nTarefas com Carga Mental Alta (4 a 5 estrelas) foram ofuscadas.\nNão se culpe. Faremos apenas o essencial hoje."); } 
+    else { appBody.classList.remove('app-caotico'); } recarregarTudo(); 
+}
 
 // ================= SAÚDE E TREINOS =================
 let currentWorkoutDay = 1;
@@ -216,15 +245,21 @@ async function salvarTreino() {
     localStorage.setItem('last_workout_' + exId, JSON.stringify({ min: min, km: km, rpe: rpe }));
     await fetch(`${API_URL}/workouts`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) }); document.getElementById('saude-tempo').value = ""; document.getElementById('saude-distancia').value = ""; recarregarTudo(); setBtnLoading('btn-save-workout', false);
 }
+async function deletarTreino(id) { if(!confirm("Excluir este treino?")) return; await fetch(`${API_URL}/workouts/${id}`, { method: 'DELETE' }); recarregarTudo(); }
 
-// 🚨 NOVO: Deletar o treino do Histórico do Dia
-async function deletarTreino(id) {
-    if(!confirm("Excluir este treino?")) return;
-    await fetch(`${API_URL}/workouts/${id}`, { method: 'DELETE' });
-    recarregarTudo();
+// ================= DIETA =================
+function prepararNovoAlimento() { document.getElementById('food-desc').value = ""; document.getElementById('food-cal').value = ""; abrirModal('modal-alimento'); }
+async function salvarAlimento() {
+    setBtnLoading('btn-save-food', true); let kcal = parseInt(document.getElementById('food-cal').value) || 400; 
+    const obj = { user_id: parseInt(localStorage.getItem("user_id")), description: document.getElementById('food-desc').value.trim(), category: document.getElementById('food-cat').value, quality_score: parseInt(document.getElementById('food-cat').value.split('|')[1]) || 50, date: hojeStr };
+    if(!obj.description) return setBtnLoading('btn-save-food', false);
+    const res = await fetch(`${API_URL}/food`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) });
+    if(res.ok) { localStorage.setItem(`food_cal_${new Date().getTime()}`, kcal); fecharModal('modal-alimento'); recarregarTudo(); }
+    setBtnLoading('btn-save-food', false);
 }
+async function deletarComida(id) { if(!confirm("Excluir esta refeição?")) return; await fetch(`${API_URL}/food/${id}`, { method: 'DELETE' }); recarregarTudo(); }
 
-// ================= INSIGHTS MENTAIS PREDITIVOS =================
+// ================= INSIGHTS MENTAIS E TCC =================
 function gerarInsightFoco(historico) {
     if(!historico || historico.length < 3) return; 
     let horasFoco = []; historico.forEach(h => { let score = parseInt(h.mood.split('|')[1]) || 3; if(score >= 4) horasFoco.push(14); });
@@ -237,36 +272,28 @@ function gerarInsightGatilhos(historico, diarios) {
     diarios.forEach(d => { if(diasRuins.includes(d.date)) { let t = d.situation.toLowerCase(); if(t.includes('reunião') || t.includes('chefe')) gatilhos.push('Pressão no Trabalho'); } });
     if(gatilhos.length > 0) { let g = [...new Set(gatilhos)][0]; document.getElementById('insight-gaps-box').classList.remove('escondido'); document.getElementById('insight-gaps-text').innerHTML = `Dias difíceis frequentemente mencionam <strong>"${g}"</strong>. Tente meditar antes desses eventos.`; }
 }
-
-// ================= BOTÃO SOS (PÂNICO) =================
 let sosInterval;
 function ativarSOS() { document.getElementById('tela-sos').classList.remove('escondido'); document.body.classList.add('sos-mode-active'); let breatheText = document.getElementById('breathe-text'); let state = 0; sosInterval = setInterval(() => { if(state === 0) { breatheText.innerText = "EXPIRE..."; state = 1; } else { breatheText.innerText = "INSPIRE..."; state = 0; } if (navigator.vibrate) navigator.vibrate(4000); }, 4000); if (navigator.vibrate) navigator.vibrate(4000); }
 function desativarSOS() { document.getElementById('tela-sos').classList.add('escondido'); document.body.classList.remove('sos-mode-active'); clearInterval(sosInterval); if (navigator.vibrate) navigator.vibrate(0); }
-
-// ================= BRAIN DUMP (VOZ) =================
 let tempSpeechText = "";
 function iniciarBrainDump() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if(!SpeechRecognition) return alert("Navegador não suporta voz nativa. Use o Chrome ou Safari.");
     const recognition = new SpeechRecognition(); recognition.lang = 'pt-BR'; recognition.interimResults = false; recognition.maxAlternatives = 1;
-    let btnTxt = document.getElementById('txt-mic'); let originalTxt = btnTxt.innerText; btnTxt.innerText = "Ouvindo... (Fale agora)";
-    recognition.start();
+    let btnTxt = document.getElementById('txt-mic'); let originalTxt = btnTxt.innerText; btnTxt.innerText = "Ouvindo... (Fale agora)"; recognition.start();
     recognition.onresult = function(event) { tempSpeechText = event.results[0][0].transcript; document.getElementById('txt-capturado').innerText = tempSpeechText; abrirModal('modal-braindump'); };
     recognition.onspeechend = function() { btnTxt.innerText = originalTxt; }; recognition.onerror = function(event) { btnTxt.innerText = originalTxt; alert("Não consegui ouvir. Tente novamente."); };
 }
 async function salvarDumpComoTarefa() { abrirModalTarefa(hojeStr); document.getElementById('task-title').value = tempSpeechText; fecharModal('modal-braindump'); }
 async function salvarDumpComoNota() { const obj = { user_id: parseInt(localStorage.getItem("user_id")), mood: "Ansioso/Acelerado|1", energy_level: 5, anxiety_level: 8, note: tempSpeechText, date: hojeStr }; await fetch(`${API_URL}/mental`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) }); fecharModal('modal-braindump'); recarregarTudo(); }
-
-// ================= RASTREADOR E DIÁRIO TCC =================
 function renderizarGraficoHumor(history) {
     const ctx = document.getElementById('moodChart').getContext('2d'); if(moodChartInstance) moodChartInstance.destroy();
     if(!history || history.length === 0) { moodChartInstance = new Chart(ctx, { type: 'line', data: { labels: ['Sem dados'], datasets: [{ data: [0] }] }, options: { plugins: { legend: { display: false } } } }); return; }
-    const labels = history.map(h => h.date.split('-')[2]); const dataValues = history.map(h => parseInt(h.mood.split('|')[1]) || 5); 
-    if(history.length > 0) estadoHumorAtual = history[history.length-1].mood.split('|')[0];
+    const labels = history.map(h => h.date.split('-')[2]); const dataValues = history.map(h => parseInt(h.mood.split('|')[1]) || 5); if(history.length > 0) estadoHumorAtual = history[history.length-1].mood.split('|')[0];
     moodChartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: 'Score Emocional', data: dataValues, borderColor: 'var(--men-color)', backgroundColor: 'rgba(244, 63, 94, 0.2)', tension: 0.4, fill: true, borderWidth: 3 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 6, display: false }, x: { grid: { display:false } } }, plugins: { legend: { display: false } } } });
 }
 async function salvarHumor() { const obj = { user_id: parseInt(localStorage.getItem("user_id")), mood: document.getElementById('mental-mood').value, energy_level: parseInt(document.getElementById('mental-energy').value), anxiety_level: 5, note: "", date: hojeStr }; await fetch(`${API_URL}/mental`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) }); fecharModal('modal-humor'); recarregarTudo(); }
 async function salvarJournal() { const obj = { user_id: parseInt(localStorage.getItem("user_id")), situation: document.getElementById('tcc-sit').value, automatic_thought: document.getElementById('tcc-aut').value, reframe: document.getElementById('tcc-ref').value, gratitude_1: document.getElementById('tcc-g1').value, gratitude_2: document.getElementById('tcc-g2').value, gratitude_3: document.getElementById('tcc-g3').value, date: hojeStr }; await fetch(`${API_URL}/journal`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) }); fecharModal('modal-journal'); recarregarTudo(); alert("✔ Reflexão salva."); }
-function prepararRelatorioTCC(journals) { const c = document.getElementById('print-tcc'); c.innerHTML = ""; if(!journals || journals.length === 0) { c.innerHTML = "O paciente não realizou registros TCC no período."; return; } journals.forEach(j => { c.innerHTML += `<div style="margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px;"><p><strong>Data:</strong> ${j.date}</p><p><strong>Situação Gatilho:</strong> ${j.situation}</p><p><strong>Pensamento:</strong> ${j.automatic_thought}</p><p><strong>Reestruturação:</strong> ${j.reframe}</p></div>`; }); }
+function prepararRelatorioTCC(journals) { const c = document.getElementById('print-tcc'); c.innerHTML = ""; if(!journals || journals.length === 0) { c.innerHTML = "Nenhum registro no período."; return; } journals.forEach(j => { c.innerHTML += `<div style="margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px;"><p><strong>Data:</strong> ${j.date}</p><p><strong>Situação Gatilho:</strong> ${j.situation}</p><p><strong>Pensamento:</strong> ${j.automatic_thought}</p><p><strong>Reestruturação:</strong> ${j.reframe}</p></div>`; }); }
 
 // ================= FINANÇAS GERAIS =================
 function renderizarGraficoPizza(t){ const ctx=document.getElementById('financeChart').getContext('2d'); const d=t.filter(x=>x.type==='expense'); const m={}; d.forEach(x=>m[x.category]=(m[x.category]||0)+x.amount); const l=Object.keys(m); const v=Object.values(m); const c=['#3b82f6','#ef4444','#f59e0b','#8b5cf6','#ec4899','#f97316','#6366f1','#64748b','#dc2626','#d97706']; if(financeChartInstance)financeChartInstance.destroy(); const rc=document.getElementById('ranking-categorias'); if(l.length===0){ financeChartInstance=new Chart(ctx,{type:'doughnut',data:{labels:['Sem gastos'],datasets:[{data:[1],backgroundColor:['#27272a']}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}}}}); if(rc) rc.innerHTML = ''; return; } const a=l.map(x=>({name:x,amount:m[x]})).sort((a,b)=>b.amount-a.amount); const tVal=v.reduce((a,b)=>a+b,0); if(rc){ rc.innerHTML=a.map(x=>{ const idx=l.indexOf(x.name); const col=c[idx%c.length]; const pct=((x.amount/tVal)*100).toFixed(1); return `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border-color);"><div style="display:flex; align-items:center; gap:10px;"><div style="width:12px; height:12px; border-radius:4px; background:${col};"></div><span style="font-size:13px; font-weight:600; color:white;">${x.name}</span></div><div style="display:flex; align-items:center; gap:10px;"><span style="font-size:13px; font-weight:800; color:white;">R$ ${x.amount.toFixed(2)}</span><span style="font-size:11px; color:var(--text-muted); width:40px; text-align:right;">${pct}%</span></div></div>`;}).join(''); } const off=l.map(x=>x===currentCategoryFilter?15:0); financeChartInstance=new Chart(ctx,{type:'doughnut',data:{labels:l,datasets:[{data:v,backgroundColor:c,borderWidth:0,hoverOffset:10,offset:off}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{position:'right',labels:{color:'#a1a1aa',font:{family:'Plus Jakarta Sans',size:11}}},tooltip:{backgroundColor:'#18191c',titleColor:'#fff',bodyColor:'#a1a1aa',padding:12,cornerRadius:8,callbacks:{label:function(c){return ' R$ '+c.parsed.toFixed(2);}}}},onClick:(e,els)=>{if(els.length>0){const cat=l[els[0].index];currentCategoryFilter=(currentCategoryFilter===cat)?null:cat;document.getElementById('lbl-filtro-categoria').innerText=currentCategoryFilter?`(${currentCategoryFilter})`:'';renderizarGraficoPizza(currentTransactions);renderizarHistorico(currentTransactions);}}}}); }
@@ -276,7 +303,7 @@ function renderizarRecorrentes(recorrentes) { const c = document.getElementById(
 function atualizarCategoriasSelect() { const tipo = document.getElementById('fin-type').value; const catSelect = document.getElementById('fin-category'); if (tipo === 'income') catSelect.innerHTML = `<option value="Salário">Salário</option><option value="Ganho Extra">Ganho Extra</option><option value="Investimentos">Investimentos</option><option value="Rendimento">Rendimento</option><option value="Outros">Outros</option>`; else catSelect.innerHTML = `<option value="Moradia">Moradia</option><option value="Alimentação">Alimentação</option><option value="Transporte">Transporte</option><option value="Saúde">Saúde</option><option value="Educação">Educação</option><option value="Lazer">Lazer</option><option value="Esportes">Esportes</option><option value="Compras">Compras</option><option value="Assinaturas">Assinaturas</option><option value="Outros">Outros</option>`; }
 function prepararNovaTransacao() { document.getElementById('fin-id').value = ""; document.getElementById('fin-amount').value = ""; document.getElementById('fin-desc').value = ""; document.getElementById('fin-date').value = hojeStr; atualizarCategoriasSelect(); abrirModal('modal-transacao'); }
 function prepararEdicaoTransacao(id, type, amount, category, desc, date) { document.getElementById('fin-id').value = id; document.getElementById('fin-type').value = type; atualizarCategoriasSelect(); document.getElementById('fin-amount').value = amount; document.getElementById('fin-category').value = category; document.getElementById('fin-desc').value = desc; document.getElementById('fin-date').value = date; abrirModal('modal-transacao'); }
-async function salvarTransacao() { const id = document.getElementById('fin-id').value; const obj = { user_id: parseInt(localStorage.getItem("user_id")), type: document.getElementById('fin-type').value, amount: parseFloat(document.getElementById('fin-amount').value), category: document.getElementById('fin-category').value, description: document.getElementById('fin-desc').value.trim() || document.getElementById('fin-category').value, date: document.getElementById('fin-date').value }; if(id) { await fetch(`${API_URL}/transactions/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) }); } else { await fetch(`${API_URL}/transactions`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) }); } fecharModal('modal-transacao'); recarregarTudo(); }
+async function salvarTransacao() { const id = document.getElementById('fin-id').value; const obj = { user_id: parseInt(localStorage.getItem("user_id")), type: document.getElementById('fin-type').value, amount: parseFloat(document.getElementById('fin-amount').value), category: document.getElementById('fin-category').value, description: document.getElementById('fin-desc').value.trim() || document.getElementById('fin-category').value, date: document.getElementById('fin-date').value }; if(isNaN(obj.amount) || obj.amount <= 0 || !obj.date) return alert("Insira valor e data corretos."); if(id) { await fetch(`${API_URL}/transactions/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) }); } else { await fetch(`${API_URL}/transactions`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) }); } fecharModal('modal-transacao'); recarregarTudo(); }
 async function deletarTransacao(id) { await fetch(`${API_URL}/transactions/${id}`, { method: 'DELETE' }); recarregarTudo(); }
 async function salvarRecorrente() { const obj = { user_id: parseInt(localStorage.getItem("user_id")), description: document.getElementById('rec-desc').value.trim(), amount: parseFloat(document.getElementById('rec-amount').value), category: document.getElementById('rec-category').value, due_day: parseInt(document.getElementById('rec-day').value) }; await fetch(`${API_URL}/recurring`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) }); fecharModal('modal-recorrente'); recarregarTudo(); }
 async function deletarRecorrente(id) { await fetch(`${API_URL}/recurring/${id}`, { method: 'DELETE' }); recarregarTudo(); }
@@ -287,14 +314,13 @@ async function deletarMetaFin(id) { await fetch(`${API_URL}/goals/finance/${id}`
 function renderizarMetasFinanceiras(metas) { const c = document.getElementById('lista-metas-fin'); if(!c) return; c.innerHTML = ""; metas.forEach(m => { let atual = parseFloat(m.current_amount) || 0; let alvo = parseFloat(m.target_amount) || 1; let pct = Math.min((atual / alvo) * 100, 100); let falta = alvo - atual; let histHtml = ''; if(m.history && m.history.length > 0) { histHtml = `<div style="margin-top: 15px; border-top: 1px solid #2a2c32; padding-top: 10px;"><span style="font-size:11px; color:var(--text-muted); font-weight:bold;">HISTÓRICO:</span><div style="max-height: 80px; overflow-y: auto; margin-top:5px; padding-right:5px;">`; m.history.forEach(tx => { let isDep = tx.type === 'deposit'; let cor = isDep ? 'var(--success-color)' : 'var(--danger-color)'; histHtml += `<div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:6px; background: #111215; padding:6px; border-radius:6px; border:1px solid #2a2c32;"><span style="color:var(--text-muted);">${tx.date.split('-').reverse().join('/')} • ${tx.description}</span><span style="color:${cor}; font-weight:bold;">${isDep?'+':'-'} R$ ${tx.amount.toFixed(2)}</span></div>`; }); histHtml += `</div></div>`; } c.innerHTML += `<div class="meta-card"><div style="display:flex; justify-content:space-between; font-size:14px; font-weight:bold; margin-bottom:5px;"><span>🎯 ${m.title}</span><span style="color:var(--fin-color);">${pct.toFixed(1)}%</span></div><div class="prog-container" style="height:8px; margin:8px 0;"><div class="prog-fill bg-fin" style="width:${pct}%;"></div></div><div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;"><div style="display:flex; flex-direction:column;"><span style="font-size:12px; color:white; font-weight:bold;">R$ ${x.current_amount.toFixed(2)} de R$ ${x.target_amount.toFixed(2)}</span><span style="font-size:11px; color:var(--danger-color); font-weight:bold;">Falta: R$ ${f>0?f.toFixed(2):'0.00'}</span></div><div class="meta-actions"><button class="btn-small" style="background: rgba(255,255,255,0.1); color:white;" onclick="prepararEdicaoMetaFin(${m.id}, '${m.title}', '${m.dream}', ${m.target_amount}, ${m.current_amount}, ${m.months})">${iconEdit}</button><button class="btn-small" style="background: rgba(239,68,68,0.15); color:#ef4444; margin:0 5px;" onclick="deletarMetaFin(${m.id})">${iconTrash}</button><button class="btn-small" style="background: rgba(59, 130, 246, 0.2); color:#3b82f6; border: 1px solid var(--fin-color);" onclick="prepararTransacaoMeta(${m.id})">+ Movimentar</button></div></div>${histHtml}</div>`; }); }
 function prepararTransacaoMeta(id){ document.getElementById('meta-tx-id').value=id; document.getElementById('meta-tx-date').value=hojeStr; abrirModal('modal-meta-tx'); }
 async function salvarTransacaoMeta(){ const id=document.getElementById('meta-tx-id').value; const obj={type:document.getElementById('meta-tx-type').value,amount:parseFloat(document.getElementById('meta-tx-amount').value),description:document.getElementById('meta-tx-desc').value.trim(),date:document.getElementById('meta-tx-date').value}; await fetch(`${API_URL}/goals/finance/${id}/transaction`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(obj)}); fecharModal('modal-meta-tx'); recarregarTudo(); }
-
-// ================= SAÚDE & DIETA (INTACTO) =================
 async function adicionarAgua() { await fetch(`${API_URL}/biometrics`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ user_id: parseInt(localStorage.getItem("user_id")), water_ml: 250, sleep_hours: 0, sleep_quality: 'Regular', date: hojeStr }) }); recarregarTudo(); }
 async function salvarBiometria() { await fetch(`${API_URL}/biometrics`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ user_id: parseInt(localStorage.getItem("user_id")), water_ml: 0, sleep_hours: parseFloat(document.getElementById('sono-horas').value) || 0, sleep_quality: document.getElementById('sono-qualidade').value, date: hojeStr }) }); fecharModal('modal-sono'); recarregarTudo(); }
-function renderizarMetasSaude(m){ const c=document.getElementById('lista-metas-saude'); if(!c)return; c.innerHTML=""; m.forEach(x=>{ let p=Math.min((x.current_amount/x.target_amount)*100,100); c.innerHTML+=`<div class="meta-card"><div style="display:flex; justify-content:space-between; font-size:14px; font-weight:bold;"><span>🏆 ${x.title}</span><span style="color:var(--sau-color);">${p.toFixed(1)}%</span></div><div class="prog-container" style="height:8px; margin:8px 0;"><div class="prog-fill bg-sau" style="width:${p}%;"></div></div><span style="font-size:12px; font-weight:bold;">Atual: ${x.current_amount} de ${x.target_amount}</span><button class="btn-small" style="background: rgba(239,68,68,0.15); color:#ef4444; margin-top:5px;" onclick="deletarMetaSaude(${x.id})">${iconTrash}</button></div>`; }); }
-function renderizarGraficoComida(c){ const ctx=document.getElementById('foodChart').getContext('2d'); if(foodChartInstance)foodChartInstance.destroy(); foodChartInstance=new Chart(ctx,{type:'doughnut',data:{labels:['Registrado'],datasets:[{data:[1],backgroundColor:['#10b981']}]},options:{responsive:true,maintainAspectRatio:false}}); }
-async function salvarMetaSaude(){ const obj={user_id:parseInt(localStorage.getItem("user_id")),title:document.getElementById('meta-sau-titulo').value,dream:document.getElementById('meta-sau-dream').value,goal_type:document.getElementById('meta-sau-type').value,current_amount:parseFloat(document.getElementById('meta-sau-atual').value),target_amount:parseFloat(document.getElementById('meta-sau-alvo').value),unit:document.getElementById('meta-sau-unit').value,months:parseInt(document.getElementById('meta-sau-meses').value)||3}; await fetch(`${API_URL}/goals/health`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(obj)}); fecharModal('modal-meta-saude'); recarregarTudo(); }
+function renderizarMetasSaude(m){ const c=document.getElementById('lista-metas-saude'); if(!c)return; c.innerHTML=""; m.forEach(x=>{ let isW = x.goal_type === 'weight'; let diff = Math.abs(x.target_amount - x.current_amount); let p = isW ? (x.current_amount <= x.target_amount ? 100 : Math.max(0, 100 - ((diff / x.current_amount) * 100))) : Math.min((x.current_amount / x.target_amount) * 100, 100); c.innerHTML+=`<div class="meta-card"><div style="display:flex; justify-content:space-between; font-size:14px; font-weight:bold;"><span>🏆 ${x.title}</span><span style="color:var(--sau-color);">${p.toFixed(1)}%</span></div><div class="prog-container" style="height:8px; margin:8px 0;"><div class="prog-fill bg-sau" style="width:${p}%;"></div></div><div style="display:flex; justify-content:space-between; align-items:center; margin-top: 10px;"><div style="display:flex; flex-direction:column;"><span style="font-size:12px; color:white; font-weight: bold;">Atual: ${x.current_amount} de ${x.target_amount} ${x.unit}</span><span style="font-size:11px; color:var(--danger-color); font-weight:bold;">Falta: ${diff > 0 ? diff.toFixed(1) + ' ' + x.unit : '0.0'}</span></div><button class="btn-small" style="background: rgba(239,68,68,0.15); color:#ef4444; margin-top:5px;" onclick="deletarMetaSaude(${x.id})">${iconTrash}</button></div></div>`; }); }
+function renderizarGraficoComida(comidas) { const ctx = document.getElementById('foodChart').getContext('2d'); let totalScore = 0; const catMap = {}; comidas.forEach(c => { let cleanCat = c.category.split('|')[0]; let score = parseInt(c.category.split('|')[1]) || 50; catMap[cleanCat] = (catMap[cleanCat] || 0) + 1; totalScore += score; }); const avgScore = comidas.length > 0 ? (totalScore / comidas.length) : 0; const barraNutri = document.getElementById('barra-nutricao'); if(barraNutri) { barraNutri.style.width = `${avgScore}%`; if(avgScore > 75) barraNutri.style.backgroundColor = 'var(--success-color)'; else if(avgScore > 40) barraNutri.style.backgroundColor = '#f59e0b'; else barraNutri.style.backgroundColor = 'var(--danger-color)'; } const labels = Object.keys(catMap); const dataValues = Object.values(catMap); const colorMap = { "Saudável/Natural": "#10b981", "Carboidrato Simples": "#f59e0b", "Doce/Açúcar": "#ec4899", "Fast Food/Fritura": "#ef4444", "Bebida Alcóolica": "#8b5cf6" }; const bgColors = labels.map(l => colorMap[l] || "#a1a1aa"); if(foodChartInstance) foodChartInstance.destroy(); const listaC = document.getElementById('lista-comidas'); if(listaC) listaC.innerHTML = comidas.map(c => `<div class="history-item"><div class="history-details" style="margin-left:5px;"><div class="history-title">${c.description}</div><div class="history-sub">${c.date.split('-').reverse().join('/')} • ${c.category.split('|')[0]}</div></div><button class="btn-small" style="background: rgba(239,68,68,0.15); color:#ef4444;" onclick="deletarComida(${c.id})">${iconTrash}</button></div>`).join(''); if(labels.length === 0) { foodChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: ['Sem dados'], datasets: [{ data: [1], backgroundColor: ['#27272a'] }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } } } }); return; } foodChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: labels, datasets: [{ data: dataValues, backgroundColor: bgColors, borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { position: 'right', labels: { color: '#a1a1aa', font: { family: 'Plus Jakarta Sans', size: 11 } } }, tooltip: { backgroundColor: '#18191c', titleColor: '#ffffff', bodyColor: '#a1a1aa', padding: 12, cornerRadius: 8 } } } }); }
+function prepararNovoAlimento() { document.getElementById('food-desc').value = ""; document.getElementById('food-cal').value = ""; abrirModal('modal-alimento'); }
+async function salvarAlimento() { setBtnLoading('btn-save-food', true); let kcal = parseInt(document.getElementById('food-cal').value) || 400; const obj = { user_id: parseInt(localStorage.getItem("user_id")), description: document.getElementById('food-desc').value.trim(), category: document.getElementById('food-cat').value, quality_score: parseInt(document.getElementById('food-cat').value.split('|')[1]) || 50, date: hojeStr }; if(!obj.description) return setBtnLoading('btn-save-food', false); const res = await fetch(`${API_URL}/food`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj) }); if(res.ok) { localStorage.setItem(`food_cal_${new Date().getTime()}`, kcal); fecharModal('modal-alimento'); recarregarTudo(); } setBtnLoading('btn-save-food', false); }
+async function deletarComida(id) { await fetch(`${API_URL}/food/${id}`, { method: 'DELETE' }); recarregarTudo(); }
+async function salvarMetaSaude() { await fetch(`${API_URL}/goals/health`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ user_id: parseInt(localStorage.getItem("user_id")), title: document.getElementById('meta-sau-titulo').value, dream: document.getElementById('meta-sau-dream').value, goal_type: document.getElementById('meta-sau-type').value, current_amount: parseFloat(document.getElementById('meta-sau-atual').value), target_amount: parseFloat(document.getElementById('meta-sau-alvo').value), unit: document.getElementById('meta-sau-unit').value, months: parseInt(document.getElementById('meta-sau-meses').value) || 3 }) }); fecharModal('modal-meta-saude'); recarregarTudo(); }
 async function deletarMetaSaude(id) { await fetch(`${API_URL}/goals/health/${id}`, { method: 'DELETE' }); recarregarTudo(); }
-async function carregarCatalogoExercicios(){ const r=await fetch(`${API_URL}/exercises`); if(r.ok){ const d=await r.json(); const s=document.getElementById('saude-exercicio'); if(s)s.innerHTML=d.map(e=>`<option value="${e.id}">${e.name}</option>`).join(''); } }
-async function salvarTreino(){ const obj={user_id:parseInt(localStorage.getItem("user_id")),exercise_id:parseInt(document.getElementById('saude-exercicio').value),duration_minutes:parseInt(document.getElementById('saude-tempo').value),date:hojeStr, distance_km:0, rpe:5}; await fetch(`${API_URL}/workouts`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(obj)}); document.getElementById('saude-tempo').value=""; recarregarTudo(); }
-async function deletarTreino(id) { await fetch(`${API_URL}/workouts/${id}`, { method: 'DELETE' }); recarregarTudo(); }
+async function carregarCatalogoExercicios() { const res = await fetch(`${API_URL}/exercises`); if(res.ok) { const d = await res.json(); const sel = document.getElementById('saude-exercicio'); if(sel) { sel.innerHTML = d.map(e => `<option value="${e.id}">${e.name}</option>`).join(''); sel.dispatchEvent(new Event('change')); } } }

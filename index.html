@@ -12,11 +12,10 @@
         * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-color); margin: 0; display: flex; justify-content: center; padding-bottom: 100px; transition: background-color 0.5s ease;}
         .app-container { width: 100%; max-width: 500px; padding: 15px; }
-        .card { background: linear-gradient(145deg, #16171a 0%, #111215 100%); border: 1px solid var(--border-color); padding: 20px; border-radius: 20px; margin-bottom: 15px; }
+        .card { background: linear-gradient(145deg, #16171a 0%, #111215 100%); border: 1px solid var(--border-color); padding: 20px; border-radius: 20px; margin-bottom: 15px; position: relative; }
         
         .prog-container { width: 100%; background: #27272a; height: 10px; border-radius: 10px; margin-top: 8px; overflow: hidden; }
         .prog-fill { height: 100%; transition: width 0.5s ease; border-radius: 10px; }
-        .bg-global { background: linear-gradient(90deg, var(--fin-color), var(--sau-color), var(--men-color)); }
         .bg-fin { background: var(--fin-color); } .bg-sau { background: var(--sau-color); } .bg-pro { background: var(--pro-color); } .bg-men { background: var(--men-color); }
         .text-danger { color: var(--danger-color) !important; } .text-success { color: var(--success-color) !important; }
 
@@ -34,59 +33,47 @@
         
         .toggle-auth { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #2a2c32; padding-bottom: 10px; }
         .toggle-auth button { flex: 1; background: none; border: none; color: var(--text-muted); font-weight: 700; padding: 8px; cursor: pointer; border-bottom: 2px solid transparent; transition: 0.3s;}
+        .toggle-auth button.active { color: var(--fin-color); border-bottom: 2px solid var(--fin-color); }
         
         .history-item { background: #18191c; padding: 12px; border-radius: 12px; border: 1px solid #2a2c32; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;}
         .history-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; justify-content: center; align-items: center; background: #27272a; flex-shrink: 0;}
         .history-details { flex: 1; margin: 0 10px; overflow: hidden; }
         .history-title { font-size: 14px; font-weight: bold; color: white; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .history-sub { font-size: 11px; color: var(--text-muted); }
-        .history-amount { font-size: 14px; font-weight: 800; white-space: nowrap; }
         
-        .day-block { border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
-        .day-header { background: #18191c; padding: 12px; font-weight: 800; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
-        .day-content { padding: 10px; background: #111215; }
-        .task-item { display: flex; justify-content: space-between; align-items: center; background: #18191c; padding: 10px; border-radius: 8px; margin-bottom: 6px; border: 1px solid #2a2c32; font-size: 13px; transition: 0.3s;}
+        /* 🔥 ESTILOS TIMELINE DO PLANNER */
+        .day-block { border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 10px; overflow: hidden; transition: 0.3s;}
+        .day-header { background: #18191c; padding: 12px; font-weight: 800; font-size: 14px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;}
+        .day-content { padding: 15px; background: #111215; }
+        
+        .timeline-item { position: relative; padding-left: 20px; margin-bottom: 15px; border-left: 2px solid #2a2c32; }
+        .timeline-item::before { content: ''; position: absolute; left: -6px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: var(--pro-color); box-shadow: 0 0 0 4px #111215; }
+        .timeline-time { font-size: 11px; font-weight: 800; color: var(--pro-color); margin-bottom: 2px; }
+        
+        .task-item { display: flex; justify-content: space-between; align-items: center; background: #18191c; padding: 12px; border-radius: 8px; border: 1px solid #2a2c32; font-size: 13px; transition: 0.3s; margin-top: 4px;}
         .task-item.completed { opacity: 0.4; text-decoration: line-through; }
         
-        /* 🚨 O TRUQUE DO MODO CAÓTICO (CSS PURO) */
-        .app-caotico .meta-text-normal { display: none; }
-        .app-caotico .meta-text-caotico { display: inline-block !important; color: #f59e0b; }
-        .meta-text-caotico { display: none; }
+        /* PLANO DE TREINOS DA SEMANA */
+        .day-selector { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+        .day-selector::-webkit-scrollbar { display: none; }
+        .day-pill { flex: 0 0 auto; width: 45px; height: 45px; border-radius: 50%; background: #18191c; border: 1px solid #33353b; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: var(--text-muted); cursor: pointer; transition: 0.3s;}
+        .day-pill.active { background: var(--sau-color); color: white; border-color: var(--sau-color); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
 
+        .app-caotico .task-pesada { opacity: 0.3; pointer-events: none; filter: grayscale(100%); border-style: dashed; }
+        
         .meta-card { background: #18191c; padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 10px; position: relative;}
         .vision-box { background: rgba(255,255,255,0.05); border-left: 3px solid var(--fin-color); padding: 12px; border-radius: 8px; margin-bottom: 15px; font-style: italic; font-size: 13px; color: #d4d4d8; font-weight: 600; line-height: 1.5;}
         
-        /* Menu e Telas */
         .nav-inferior { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); width: calc(100% - 30px); max-width: 470px; background: rgba(19, 20, 24, 0.95); backdrop-filter: blur(10px); border: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px; border-radius: 20px; z-index: 100;}
         .nav-item { background: transparent; border: none; color: var(--text-muted); font-size: 11px; font-weight: 800; cursor: pointer; padding: 8px 6px; border-radius: 10px; transition: 0.2s; }
-        .escondido { display: none !important; }
         
-        /* Modais */
+        .escondido { display: none !important; }
         .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 20px; backdrop-filter: blur(5px);}
         .modal-content { background: var(--card-bg); width: 100%; max-width: 400px; padding: 24px; border-radius: 20px; border: 1px solid #33353b; max-height: 90vh; overflow-y: auto;}
 
-        /* Bateria Ponto Zero Finanças */
         .balance-bar-wrapper { position: relative; width: 100%; height: 10px; background: #27272a; border-radius: 10px; margin-top: 8px; overflow: hidden; }
         .balance-bar-neg { position: absolute; right: 50%; height: 100%; background: var(--danger-color); transition: 0.4s ease; border-radius: 10px 0 0 10px; width: 0%; }
         .balance-bar-pos { position: absolute; left: 50%; height: 100%; background: var(--success-color); transition: 0.4s ease; border-radius: 0 10px 10px 0; width: 0%; }
         .balance-bar-zero { position: absolute; left: 50%; width: 2px; height: 100%; background: #fff; transform: translateX(-50%); z-index: 2; }
-
-        /* Botão SOS Pânico */
-        .btn-sos { position: fixed; bottom: 85px; right: 20px; width: 60px; height: 60px; border-radius: 30px; background: var(--danger-color); color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; cursor: pointer; box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); z-index: 99; border: 2px solid #fff; transition: 0.3s;}
-        .btn-sos:active { transform: scale(0.9); }
-
-        /* Tela de Pânico (SOS Mode) */
-        .sos-mode-active { background-color: #000 !important; }
-        .sos-overlay { position: fixed; top:0; left:0; width: 100vw; height: 100vh; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; padding: 20px; text-align: center; }
-        .breathe-circle { width: 150px; height: 150px; border-radius: 50%; background: rgba(244, 63, 94, 0.2); border: 2px solid var(--men-color); animation: breathe 8s infinite ease-in-out; margin: 40px 0; display:flex; align-items:center; justify-content:center; font-size: 18px; font-weight:bold;}
-        @keyframes breathe { 0% { transform: scale(1); } 50% { transform: scale(1.8); background: rgba(244, 63, 94, 0.5); } 100% { transform: scale(1); } }
-
-        /* Impressão PDF pro Terapeuta */
-        @media print {
-            body * { display: none; }
-            #print-area, #print-area * { display: block; color: black !important; background: white !important;}
-            #print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 20px;}
-        }
     </style>
 </head>
 <body id="app-body">
@@ -105,57 +92,70 @@
             <button onclick="fazerLogout()" style="background: none; border: none; color: var(--danger-color); font-size: 11px; font-weight: bold; cursor: pointer;">SAIR</button>
         </div>
 
-        <section id="aba-financas">
+        <section id="aba-financas" class="escondido">
             <div class="card"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;"><h3 style="margin:0;">🎯 Suas Metas de Vida</h3><button class="btn-outline btn-small" style="color:white; border-color: var(--fin-color);" onclick="prepararNovaMetaFin()">+ Nova</button></div><div id="lista-metas-fin"></div></div>
             <div class="card"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><h3 style="margin:0; color: var(--fin-color);">Visão Financeira</h3><input type="month" id="filtro-mes-fin" style="background: #18191c; border: 1px solid #33353b; color: white; padding: 4px 8px; border-radius: 8px; font-size: 12px;" onchange="recarregarTudo()"></div><div class="balance-bar-wrapper"><div class="balance-bar-neg" id="barra-fin-neg"></div><div class="balance-bar-pos" id="barra-fin-pos"></div><div class="balance-bar-zero"></div></div><div style="font-size: 36px; font-weight: 800; text-align: center; margin: 15px 0; transition: 0.3s;" id="lbl-saldo">R$ 0,00</div><div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin: 0 10px;"><span>Entradas: <span id="lbl-rendas" style="color: var(--success-color); font-weight: bold;">R$ 0,00</span></span><span>Saídas: <span id="lbl-gastos" style="color: var(--danger-color); font-weight: bold;">R$ 0,00</span></span></div><button class="btn btn-fin" onclick="prepararNovaTransacao()">+ Lançar Movimentação</button></div>
-            <div class="card"><h3 style="margin-top:0;">Onde seu dinheiro vai?</h3><div style="position: relative; height: 220px; width: 100%; margin-bottom: 20px;"><canvas id="financeChart"></canvas></div><div id="ranking-categorias" style="margin-bottom: 20px;"></div><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><h4 style="font-size: 13px; color: var(--text-muted); margin: 0;">HISTÓRICO <span id="lbl-filtro-categoria" style="color:var(--fin-color);"></span></h4></div><div class="toggle-auth" style="margin-bottom: 10px;"><button id="tab-hist-all" class="active" style="border-color: var(--text-color); color: white;" onclick="setHistoryTab('all')">Tudo</button><button id="tab-hist-income" onclick="setHistoryTab('income')">Entradas</button><button id="tab-hist-expense" onclick="setHistoryTab('expense')">Saídas</button></div><div id="lista-transacoes" style="max-height: 350px; overflow-y: auto; padding-right: 5px;"></div></div>
+            <div class="card"><h3 style="margin-top:0;">Onde seu dinheiro vai? (Saídas)</h3><div style="position: relative; height: 220px; width: 100%; margin-bottom: 20px;"><canvas id="financeChart"></canvas></div><div id="ranking-categorias" style="margin-bottom: 20px;"></div><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><h4 style="font-size: 13px; color: var(--text-muted); margin: 0;">HISTÓRICO DO MÊS <span id="lbl-filtro-categoria" style="color:var(--fin-color);"></span></h4></div><div class="toggle-auth" style="margin-bottom: 10px;"><button id="tab-hist-all" class="active" style="border-color: var(--text-color); color: white;" onclick="setHistoryTab('all')">Tudo</button><button id="tab-hist-income" onclick="setHistoryTab('income')">Entradas</button><button id="tab-hist-expense" onclick="setHistoryTab('expense')">Saídas</button></div><div id="lista-transacoes" style="max-height: 350px; overflow-y: auto; padding-right: 5px;"></div></div>
             <div class="card"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;"><h3 style="margin:0;">Gastos Recorrentes</h3><button class="btn-outline btn-small" onclick="abrirModal('modal-recorrente')">+ Adicionar</button></div><div id="lista-recorrentes"></div></div>
         </section>
 
         <section id="aba-saude" class="escondido">
-            <div class="card">
-                <h3 style="margin-top:0; color: var(--sau-color);">🔋 Bateria Biológica</h3>
-                <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px; margin-bottom: 20px;"><div style="flex:1; height: 28px; border: 2px solid #33353b; border-radius: 6px; padding: 2px; position: relative; background: #111215;"><div id="battery-level" style="height: 100%; width: 0%; border-radius: 3px; background: var(--danger-color); transition: width 0.6s ease-in-out, background-color 0.4s ease;"></div></div><div style="width: 5px; height: 14px; background: #33353b; border-radius: 0 4px 4px 0; margin-left: -12px; z-index:2;"></div><span id="battery-pct" style="font-weight: 800; width: 45px; text-align: right; color: white;">0%</span></div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div style="background: #18191c; border: 1px solid #2a2c32; padding: 12px; border-radius: 12px; text-align: center;"><span style="font-size: 16px;">💧</span> <strong style="font-size: 14px; color: #3b82f6;" id="lbl-agua">0 ml</strong><button class="btn-outline btn-small" style="margin: 8px auto 0 auto; width: 100%; border-color: #3b82f6;" onclick="adicionarAgua()">+ 250ml</button></div><div style="background: #18191c; border: 1px solid #2a2c32; padding: 12px; border-radius: 12px; text-align: center;"><span style="font-size: 16px;">💤</span> <strong style="font-size: 14px; color: #8b5cf6;" id="lbl-sono">0 hrs</strong><button class="btn-outline btn-small" style="margin: 8px auto 0 auto; width: 100%; border-color: #8b5cf6;" onclick="abrirModal('modal-sono')">Logar Sono</button></div></div>
-            </div>
-            <div class="card"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;"><h3 style="margin:0;">🏆 Metas Físicas</h3><button class="btn-outline btn-small" style="color:white; border-color: var(--sau-color);" onclick="abrirModal('modal-meta-saude')">+ Nova</button></div><div id="lista-metas-saude"></div></div>
-            
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><h3 style="margin:0;">🥗 Diário Nutricional</h3><button class="btn-outline btn-small" onclick="prepararNovoAlimento()">+ Manual</button></div>
-                <label class="btn btn-ai" style="display: flex; align-items:center; justify-content:center; cursor: pointer; margin-bottom: 20px;"><span id="txt-scan-btn">📸 Scan IA do Prato</span><input type="file" accept="image/*" capture="environment" style="display: none;" onchange="simularScannerIA(this)"></label>
-                <div style="text-align: center; margin-bottom: 15px; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 15px; border-radius: 12px;"><span style="font-size: 11px; color: var(--text-muted); font-weight:bold; text-transform:uppercase; letter-spacing: 0.5px;">Calorias Restantes (Hoje)</span><br><strong style="font-size: 32px; color: white;" id="lbl-cal-restantes">--</strong><br><span style="font-size: 10px; color: var(--text-muted);">Meta Basal - Ingerido + Treino</span></div>
-                <p style="font-size: 12px; font-weight:bold; margin: 15px 0 5px 0;">Densidade Nutricional:</p><div class="prog-container"><div class="prog-fill bg-sau" id="barra-nutricao" style="width: 0%;"></div></div><p style="font-size: 11px; color: var(--text-muted); font-style: italic; margin-bottom: 20px;">Alimentos ricos vs. Calorias vazias</p>
-                <div style="position: relative; height: 180px; width: 100%; margin-bottom: 20px;"><canvas id="foodChart"></canvas></div><div id="ranking-comidas" style="margin-bottom: 10px;"></div><div id="lista-comidas" style="max-height: 250px; overflow-y: auto;"></div>
+            <div id="health-feedback-box" class="escondido" style="background: rgba(16, 185, 129, 0.1); border-left: 3px solid var(--sau-color); padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 12px; color: #d4d4d8;">
+                <span id="health-feedback-text">--</span>
             </div>
 
+            <div class="card"><h3 style="margin-top:0; color: var(--sau-color);">🔋 Bateria Biológica</h3><div style="display: flex; align-items: center; gap: 10px; margin-top: 15px; margin-bottom: 20px;"><div style="flex:1; height: 28px; border: 2px solid #33353b; border-radius: 6px; padding: 2px; position: relative; background: #111215;"><div id="battery-level" style="height: 100%; width: 0%; border-radius: 3px; background: var(--danger-color); transition: width 0.6s ease-in-out, background-color 0.4s ease;"></div></div><div style="width: 5px; height: 14px; background: #33353b; border-radius: 0 4px 4px 0; margin-left: -12px; z-index:2;"></div><span id="battery-pct" style="font-weight: 800; width: 45px; text-align: right; color: white;">0%</span></div><div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div style="background: #18191c; border: 1px solid #2a2c32; padding: 12px; border-radius: 12px; text-align: center;"><span style="font-size: 16px;">💧</span> <strong style="font-size: 14px; color: #3b82f6;" id="lbl-agua">0 ml</strong><button class="btn-outline btn-small" style="margin: 8px auto 0 auto; width: 100%; border-color: #3b82f6;" onclick="adicionarAgua()">+ 250ml</button></div><div style="background: #18191c; border: 1px solid #2a2c32; padding: 12px; border-radius: 12px; text-align: center;"><span style="font-size: 16px;">💤</span> <strong style="font-size: 14px; color: #8b5cf6;" id="lbl-sono">0 hrs</strong><button class="btn-outline btn-small" style="margin: 8px auto 0 auto; width: 100%; border-color: #8b5cf6;" onclick="abrirModal('modal-sono')">Logar Sono</button></div></div></div>
+            <div class="card"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;"><h3 style="margin:0;">🏆 Metas Físicas</h3><button class="btn-outline btn-small" style="color:white; border-color: var(--sau-color);" onclick="abrirModal('modal-meta-saude')">+ Nova Meta</button></div><div id="lista-metas-saude"></div></div>
+            
             <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;"><h3 style="margin:0;">🏃 Registrar Treino</h3></div>
-                <div class="form-group"><label>Exercício:</label><select id="saude-exercicio"></select></div>
-                <div id="last-workout-stats" style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; font-size: 12px; color: var(--ai-color); font-weight:bold; margin-bottom: 15px; text-align:center;">Carregando histórico...</div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div class="form-group"><label>Tempo (Min):</label><input type="number" id="saude-tempo" placeholder="40"></div><div class="form-group"><label>Distância (Km):</label><input type="number" id="saude-distancia" placeholder="Opcional" step="0.1"></div></div>
-                <div class="form-group" style="margin-top: 5px;"><label>Percepção de Esforço (RPE 1 a 10):</label><input type="range" id="saude-rpe" min="1" max="10" value="5" oninput="document.getElementById('lbl-rpe').innerText = this.value"><span style="font-size: 12px; text-align: center; color: var(--sau-color); font-weight: bold;">Carga RPE: <span id="lbl-rpe">5</span></span></div>
-                <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 12px; color: var(--text-muted);"><span>🔥 Hoje: <span id="lbl-cal-hoje" style="color: var(--sau-color); font-weight:bold;">0</span> kcal</span><span>📍 Hoje: <span id="lbl-km-hoje" style="color: white; font-weight:bold;">0</span> km</span></div>
-                <button class="btn btn-sau" id="btn-save-workout" onclick="salvarTreino()">Registrar Esforço Real</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin:0;">🗓️ Cronograma de Treinos</h3>
+                    <button class="btn-outline btn-small" onclick="abrirModal('modal-workout-plan')">+ Add Treino</button>
+                </div>
+                <p style="font-size: 11px; color: var(--text-muted); margin-top:-10px;">Monte a sua planilha da semana de acordo com o PDF.</p>
+                
+                <div class="day-selector">
+                    <div class="day-pill active" onclick="selecionarDiaTreino(1, this)">Seg</div>
+                    <div class="day-pill" onclick="selecionarDiaTreino(2, this)">Ter</div>
+                    <div class="day-pill" onclick="selecionarDiaTreino(3, this)">Qua</div>
+                    <div class="day-pill" onclick="selecionarDiaTreino(4, this)">Qui</div>
+                    <div class="day-pill" onclick="selecionarDiaTreino(5, this)">Sex</div>
+                    <div class="day-pill" onclick="selecionarDiaTreino(6, this)">Sab</div>
+                    <div class="day-pill" onclick="selecionarDiaTreino(0, this)">Dom</div>
+                </div>
+                
+                <div id="lista-plano-treino" style="margin-top: 15px;">
+                    </div>
             </div>
+
+            <div class="card"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><h3 style="margin:0;">🥗 Diário Nutricional</h3><button class="btn-outline btn-small" onclick="prepararNovoAlimento()">+ Manual</button></div><div style="text-align: center; margin-bottom: 15px; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 15px; border-radius: 12px;"><span style="font-size: 11px; color: var(--text-muted); font-weight:bold; text-transform:uppercase; letter-spacing: 0.5px;">Calorias Restantes (Hoje)</span><br><strong style="font-size: 32px; color: white;" id="lbl-cal-restantes">--</strong><br><span style="font-size: 10px; color: var(--text-muted);">Meta Basal - Ingerido + Treino</span></div><div class="prog-container"><div class="prog-fill bg-sau" id="barra-nutricao" style="width: 0%;"></div></div><div style="position: relative; height: 180px; width: 100%; margin-top:20px; margin-bottom: 20px;"><canvas id="foodChart"></canvas></div><div id="ranking-comidas" style="margin-bottom: 10px;"></div><div id="lista-comidas" style="max-height: 250px; overflow-y: auto;"></div></div>
+            <div class="card"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;"><h3 style="margin:0;">🏃 Registrar Esforço Hoje</h3></div><div class="form-group"><label>Exercício:</label><select id="saude-exercicio"></select></div><div id="last-workout-stats" style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; font-size: 12px; color: var(--ai-color); font-weight:bold; margin-bottom: 15px; text-align:center;">Carregando histórico...</div><div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div class="form-group"><label>Tempo (Min):</label><input type="number" id="saude-tempo" placeholder="40"></div><div class="form-group"><label>Distância (Km):</label><input type="number" id="saude-distancia" placeholder="Opcional" step="0.1"></div></div><div class="form-group" style="margin-top: 5px;"><label>Percepção de Esforço (RPE 1 a 10):</label><input type="range" id="saude-rpe" min="1" max="10" value="5" oninput="document.getElementById('lbl-rpe').innerText = this.value"><span style="font-size: 12px; text-align: center; color: var(--sau-color); font-weight: bold;">Carga RPE: <span id="lbl-rpe">5</span></span></div><button class="btn btn-sau" id="btn-save-workout" onclick="salvarTreino()">Registrar Esforço Real</button></div>
         </section>
 
         <section id="aba-mental" class="escondido">
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <h3 style="margin:0; color: var(--men-color);">🧠 Gestão Cognitiva</h3>
-                    <div style="display:flex; align-items:center; gap:5px;">
-                        <span style="font-size: 11px; font-weight:bold; color:var(--text-muted);">Dia Caótico?</span>
-                        <input type="checkbox" id="toggle-caotico" onchange="toggleDiaCaotico(this)" style="width: 18px; height:18px;">
+                    <div style="display:flex; align-items:center; gap:5px; background: rgba(245, 158, 11, 0.1); padding: 5px 10px; border-radius: 8px; border: 1px solid #f59e0b;">
+                        <span style="font-size: 11px; font-weight:bold; color:#f59e0b;">Dia Caótico?</span>
+                        <input type="checkbox" id="toggle-caotico" onchange="toggleDiaCaotico(this)" style="width: 16px; height:16px; cursor: pointer;">
                     </div>
                 </div>
                 
-                <p style="font-size: 12px; color: var(--text-muted); margin-top:0;">Esvazie a mente sem digitar. Fale suas tarefas ou preocupações e nós triamos.</p>
+                <div id="acao-sugerida-box" class="escondido" style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success-color); padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+                    <span style="font-size: 12px; color: white;">💡 <span id="acao-sugerida-text">Ação sugerida...</span></span>
+                </div>
+
+                <p style="font-size: 12px; color: var(--text-muted); margin-top:0;">Esvazie a mente. Fale suas tarefas e nós triamos para a Linha do Tempo.</p>
                 <button class="btn" style="background: rgba(244, 63, 94, 0.15); color: var(--men-color); border: 1px solid var(--men-color); display:flex; align-items:center; justify-content:center; gap:10px; padding: 20px;" onclick="iniciarBrainDump()" id="btn-mic">
-                    <span style="font-size: 24px;">🎙️</span> <span id="txt-mic" style="font-size:16px;">Iniciar Despejo Mental (Voz)</span>
+                    <span style="font-size: 24px;">🎙️</span> <span id="txt-mic" style="font-size:14px;">Despejo Mental (Voz)</span>
                 </button>
 
                 <div style="margin-top: 25px;">
-                    <h4 style="font-size: 13px; color: white; margin-bottom: 10px;">📋 Suas Micro-Metas (Hoje)</h4>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="font-size: 13px; color: white; margin:0;">📋 Sua Linha do Tempo</h4>
+                        <button class="btn-outline btn-small" onclick="abrirModalTarefa(hojeStr)">+ Add Tarefa</button>
+                    </div>
                     <div id="planner-semanal"></div>
                 </div>
             </div>
@@ -165,12 +165,20 @@
                     <h3 style="margin:0;">📊 Radar Emocional</h3>
                     <button class="btn-outline btn-small" onclick="abrirModal('modal-humor')">+ Check-in</button>
                 </div>
+                
+                <div id="insight-foco-box" class="escondido" style="background: rgba(139, 92, 246, 0.1); border-left: 3px solid var(--pro-color); padding: 10px; font-size: 12px; color: #d4d4d8; margin-bottom: 10px;">
+                    ⚡ <strong>Melhor Horário:</strong> <span id="insight-foco-text">--</span>
+                </div>
+                
+                <div id="insight-gaps-box" class="escondido" style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid var(--danger-color); padding: 10px; font-size: 12px; color: #d4d4d8; margin-bottom: 15px;">
+                    🔍 <strong>Gatilho Detectado:</strong> <span id="insight-gaps-text">--</span>
+                </div>
+
                 <div style="position: relative; height: 180px; width: 100%; margin-bottom: 20px;"><canvas id="moodChart"></canvas></div>
 
                 <div style="margin-top: 25px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <h4 style="font-size: 13px; color: white; margin:0;">📓 Diário Clínico (TCC)</h4>
-                        <button class="btn-outline btn-small" style="font-size:10px;" onclick="window.print()">🖨️ PDF P/ Terapeuta</button>
                     </div>
                     <button class="btn btn-men" onclick="abrirModal('modal-journal')">Escrever Reflexão Guiada</button>
                 </div>
@@ -182,95 +190,67 @@
             <button class="nav-item" id="nav-saude" onclick="navegar('saude')">🏋️ Físico</button>
             <button class="nav-item" id="nav-mental" onclick="navegar('mental')">🧠 Mental</button>
         </nav>
-        
-        <div class="btn-sos" onclick="ativarSOS()" title="Protocolo de Pânico">SOS</div>
     </div>
 </div>
 
-<div id="modal-braindump" class="modal-overlay escondido">
+<div id="modal-nova-tarefa" class="modal-overlay escondido">
     <div class="modal-content">
-        <h3 style="color: var(--men-color);">O que fazemos com isso?</h3>
-        <p style="font-size: 12px; color: var(--text-muted);">Texto capturado:</p>
-        <div id="txt-capturado" style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; font-style: italic; font-size: 13px; color: white; margin-bottom: 15px;"></div>
-        
-        <div style="display: flex; gap: 10px; flex-direction: column;">
-            <button class="btn btn-pro" onclick="salvarDumpComoTarefa()">Converter em Tarefa (Planner)</button>
-            <button class="btn btn-men" onclick="salvarDumpComoNota()">Salvar no Diário Clínico</button>
-            <button class="btn btn-outline" onclick="fecharModal('modal-braindump')">Descartar</button>
+        <h3>Agendar na Linha do Tempo</h3>
+        <input type="hidden" id="task-date">
+        <div class="form-group"><label>O que precisa ser feito?</label><input type="text" id="task-title" placeholder="Ex: Reunião com a equipe"></div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div class="form-group"><label>Horário (Opcional):</label><input type="time" id="task-time"></div>
+            <div class="form-group" style="display: flex; justify-content: center;"><label style="margin-bottom: 0;">Repetir todo dia?</label><input type="checkbox" id="task-recurring" style="width: 20px; height: 20px; margin: 5px auto 0 auto; cursor: pointer;"></div>
         </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div class="form-group">
+                <label>Área:</label>
+                <select id="task-tag">
+                    <option value="Trabalho">Trabalho</option>
+                    <option value="Estudo">Estudo</option>
+                    <option value="Mental">Mental</option>
+                    <option value="Físico">Físico</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Carga Mental:</label>
+                <select id="task-load">
+                    <option value="1">1⭐ (Muito Fácil)</option>
+                    <option value="2">2⭐ (Fácil)</option>
+                    <option value="3">3⭐ (Médio)</option>
+                    <option value="4">4⭐ (Difícil)</option>
+                    <option value="5">5⭐ (Exaustivo)</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn btn-pro" onclick="salvarTarefaNova()">Adicionar</button>
+        <button class="btn btn-outline" onclick="fecharModal('modal-nova-tarefa')">Cancelar</button>
     </div>
 </div>
 
-<div id="modal-humor" class="modal-overlay escondido">
+<div id="modal-workout-plan" class="modal-overlay escondido">
     <div class="modal-content">
-        <h3>Como você está agora?</h3>
-        <div class="form-group">
-            <label>Humor Predominante:</label>
-            <select id="mental-mood">
-                <option value="Calmo/Focado|5">🧘 Calmo / Focado</option>
-                <option value="Feliz/Grato|5">😊 Feliz / Grato</option>
-                <option value="Cansado/Burnout|2">🥱 Cansado / Fadigado</option>
-                <option value="Ansioso/Acelerado|1">😰 Ansioso / Acelerado</option>
-                <option value="Triste/Vazio|1">😔 Triste / Desanimado</option>
-            </select>
+        <h3>Adicionar ao Plano de Treino</h3>
+        <div class="form-group"><label>Dia da Semana:</label><select id="wp-day"><option value="1">Segunda</option><option value="2">Terça</option><option value="3">Quarta</option><option value="4">Quinta</option><option value="5">Sexta</option><option value="6">Sábado</option><option value="0">Domingo</option></select></div>
+        <div class="form-group"><label>Nome do Exercício:</label><input type="text" id="wp-name" placeholder="Ex: Supino Reto"></div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div class="form-group"><label>Séries:</label><input type="number" id="wp-sets" placeholder="4"></div>
+            <div class="form-group"><label>Repetições:</label><input type="text" id="wp-reps" placeholder="10 a 12"></div>
         </div>
-        <div class="form-group"><label>Nível de Energia (1 a 10):</label><input type="range" id="mental-energy" min="1" max="10" value="5"></div>
-        <button class="btn btn-men" onclick="salvarHumor()">Salvar Estado</button>
-        <button class="btn btn-outline" onclick="fecharModal('modal-humor')">Cancelar</button>
+        <div class="form-group"><label>Nota/Técnica:</label><input type="text" id="wp-notes" placeholder="Ex: Cadência 3s na descida"></div>
+        <button class="btn btn-sau" onclick="salvarPlanoTreino()">Salvar no Cronograma</button>
+        <button class="btn btn-outline" onclick="fecharModal('modal-workout-plan')">Cancelar</button>
     </div>
 </div>
 
-<div id="modal-journal" class="modal-overlay escondido">
-    <div class="modal-content">
-        <h3 style="color: var(--men-color);">Diário Guiado (TCC)</h3>
-        <div class="form-group"><label>1. O que aconteceu hoje que mexeu com você?</label><textarea id="tcc-sit" rows="2" placeholder="Descreva o fato (sem julgar)."></textarea></div>
-        <div class="form-group"><label>2. Qual foi seu pensamento automático?</label><textarea id="tcc-aut" rows="2" placeholder="Ex: 'Eu sou um fracasso, nada dá certo'"></textarea></div>
-        <div class="form-group"><label>3. Reestruturação: Como podemos ver isso de forma lógica e gentil?</label><textarea id="tcc-ref" rows="2" placeholder="Ex: 'Foi só um erro isolado, eu aprendi com isso'"></textarea></div>
-        <div class="form-group" style="border-top: 1px solid #333; padding-top:10px; margin-top:10px;">
-            <label>Neuroplasticidade: Cite 3 micro-vitórias hoje</label>
-            <input type="text" id="tcc-g1" placeholder="1. O café estava bom" style="margin-bottom:5px;">
-            <input type="text" id="tcc-g2" placeholder="2." style="margin-bottom:5px;">
-            <input type="text" id="tcc-g3" placeholder="3.">
-        </div>
-        <button class="btn btn-men" onclick="salvarJournal()">Salvar no Diário</button>
-        <button class="btn btn-outline" onclick="fecharModal('modal-journal')">Cancelar</button>
-    </div>
-</div>
-
-<div id="tela-sos" class="sos-overlay escondido">
-    <h1 style="color: var(--men-color); font-size: 28px; margin-bottom: 5px;">Modo de Resgate</h1>
-    <p style="color: #a1a1aa; font-size: 14px; margin-bottom: 40px; max-width: 300px;">Siga a esfera. Inspire quando ela crescer, expire quando ela diminuir.</p>
-    
-    <div class="breathe-circle" id="breathe-text">INSPIRE</div>
-    
-    <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; max-width: 320px; margin-top: 20px;">
-        <h3 style="margin-top:0; font-size:16px;">Ancoragem 5-4-3-2-1</h3>
-        <ol style="text-align: left; font-size: 13px; color: #d4d4d8; padding-left: 20px;">
-            <li>Olhe ao redor e diga mentalmente <strong>5 coisas</strong> que você pode ver.</li>
-            <li>Toque em <strong>4 coisas</strong> ao seu redor.</li>
-            <li>Preste atenção em <strong>3 coisas</strong> que você pode ouvir.</li>
-            <li>Sinta <strong>2 coisas</strong> que você pode cheirar.</li>
-            <li>Pense em <strong>1 coisa</strong> que você pode saborear.</li>
-        </ol>
-    </div>
-    
-    <button class="btn-outline" style="margin-top: 40px; color: white; border-color: white;" onclick="desativarSOS()">Estou melhor. Voltar.</button>
-</div>
-
-<div id="print-area" class="escondido">
-    <h1 style="color: #111;">Relatório Clínico (Evolução Pessoal)</h1>
-    <p><strong>Paciente:</strong> <span id="print-name"></span></p>
-    <p><strong>Data do Relatório:</strong> <script>document.write(new Date().toLocaleDateString())</script></p>
-    <hr>
-    <h3>Últimos Registros TCC:</h3>
-    <div id="print-tcc">Nenhum registro no período.</div>
-</div>
-
+<div id="modal-braindump" class="modal-overlay escondido"><div class="modal-content"><h3 style="color: var(--men-color);">O que fazemos com isso?</h3><div id="txt-capturado" style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; font-style: italic; font-size: 13px; color: white; margin-bottom: 15px;"></div><div style="display: flex; gap: 10px; flex-direction: column;"><button class="btn btn-pro" onclick="salvarDumpComoTarefa()">Agendar como Tarefa (Geral)</button><button class="btn btn-men" onclick="salvarDumpComoNota()">Salvar como Desabafo (Diário)</button><button class="btn btn-outline" onclick="fecharModal('modal-braindump')">Descartar</button></div></div></div>
+<div id="modal-humor" class="modal-overlay escondido"><div class="modal-content"><h3>Como você está agora?</h3><div class="form-group"><label>Humor Predominante:</label><select id="mental-mood"><option value="Calmo/Focado|5">🧘 Calmo / Focado</option><option value="Feliz/Grato|5">😊 Feliz / Grato</option><option value="Cansado/Burnout|2">🥱 Cansado / Fadigado</option><option value="Ansioso/Acelerado|1">😰 Ansioso / Acelerado</option><option value="Triste/Vazio|1">😔 Triste / Desanimado</option></select></div><div class="form-group"><label>Nível de Energia (1 a 10):</label><input type="range" id="mental-energy" min="1" max="10" value="5"></div><button class="btn btn-men" onclick="salvarHumor()">Salvar Estado</button><button class="btn btn-outline" onclick="fecharModal('modal-humor')">Cancelar</button></div></div>
+<div id="modal-journal" class="modal-overlay escondido"><div class="modal-content"><h3 style="color: var(--men-color);">Diário Guiado (TCC)</h3><div class="form-group"><label>1. O que aconteceu hoje que mexeu com você?</label><textarea id="tcc-sit" rows="2"></textarea></div><div class="form-group"><label>2. Qual foi seu pensamento automático?</label><textarea id="tcc-aut" rows="2"></textarea></div><div class="form-group"><label>3. Reestruturação: Como ver isso de forma lógica?</label><textarea id="tcc-ref" rows="2"></textarea></div><div class="form-group" style="border-top: 1px solid #333; padding-top:10px; margin-top:10px;"><label>Cite 3 micro-vitórias hoje</label><input type="text" id="tcc-g1" style="margin-bottom:5px;"><input type="text" id="tcc-g2" style="margin-bottom:5px;"><input type="text" id="tcc-g3"></div><button class="btn btn-men" onclick="salvarJournal()">Salvar no Diário</button><button class="btn btn-outline" onclick="fecharModal('modal-journal')">Cancelar</button></div></div>
 <div id="modal-transacao" class="modal-overlay escondido"><div class="modal-content"><h3 id="transacao-modal-title">Nova Transação</h3><input type="hidden" id="fin-id"><div class="form-group"><label>Data:</label><input type="date" id="fin-date"></div><div class="form-group"><label>Tipo de Lançamento:</label><select id="fin-type" onchange="atualizarCategoriasSelect()"><option value="expense">Despesa (Saída)</option><option value="income">Renda (Entrada)</option></select></div><div class="form-group"><label>Valor (R$):</label><input type="number" id="fin-amount" step="0.01"></div><div class="form-group"><label>Descrição / Origem:</label><input type="text" id="fin-desc"></div><div class="form-group"><label>Categoria:</label><select id="fin-category"></select></div><button class="btn btn-fin" onclick="salvarTransacao()">Salvar</button><button class="btn btn-outline" onclick="fecharModal('modal-transacao')">Cancelar</button></div></div>
-<div id="modal-recorrente" class="modal-overlay escondido"><div class="modal-content"><h3>Novo Gasto Fixo</h3><div class="form-group"><label>Descrição:</label><input type="text" id="rec-desc"></div><div class="form-group"><label>Valor (R$):</label><input type="number" id="rec-amount" step="0.01"></div><div class="form-group"><label>Dia Vencimento:</label><input type="number" id="rec-day" min="1" max="31"></div><div class="form-group"><label>Categoria:</label><select id="rec-category"><option value="Moradia">Moradia</option><option value="Educação">Educação</option><option value="Assinaturas">Assinaturas</option><option value="Outros">Outros</option></select></div><button class="btn btn-fin" onclick="salvarRecorrente()">Salvar Fixo</button><button class="btn btn-outline" onclick="fecharModal('modal-recorrente')">Cancelar</button></div></div>
 <div id="modal-meta-fin" class="modal-overlay escondido"><div class="modal-content"><h3 id="meta-fin-modal-title">Sua Meta Financeira</h3><input type="hidden" id="meta-fin-id"><div class="form-group"><label>Título:</label><input type="text" id="meta-fin-titulo"></div><div class="form-group"><label>Sonho:</label><textarea id="meta-fin-dream" rows="2"></textarea></div><div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div class="form-group"><label>Valor Total (R$):</label><input type="number" id="meta-fin-valor"></div><div class="form-group"><label>Já guardado (R$):</label><input type="number" id="meta-fin-atual"></div></div><div class="form-group"><label>Meses?</label><input type="number" id="meta-fin-meses" placeholder="12"></div><button class="btn btn-fin" onclick="salvarMetaFin()">Firmar Compromisso</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-fin')">Cancelar</button></div></div>
-<div id="modal-meta-tx" class="modal-overlay escondido"><div class="modal-content"><h3>Movimentar Sonho</h3><input type="hidden" id="meta-tx-id"><div class="form-group"><label>Ação:</label><select id="meta-tx-type"><option value="deposit">Aporte (+ Guardar)</option><option value="withdrawal">Retirada (- Sacar)</option></select></div><div class="form-group"><label>Data:</label><input type="date" id="meta-tx-date"></div><div class="form-group"><label>Valor (R$):</label><input type="number" id="meta-tx-amount" step="0.01"></div><div class="form-group"><label>Motivo:</label><input type="text" id="meta-tx-desc"></div><button class="btn btn-fin" onclick="salvarTransacaoMeta()">Lançar na Meta</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-tx')">Cancelar</button></div></div>
-<div id="modal-meta-saude" class="modal-overlay escondido"><div class="modal-content"><h3>Criar Meta Física</h3><div class="form-group"><label>Qual é a sua busca?</label><select id="meta-sau-type"><option value="weight">Alteração de Peso Corporal</option><option value="distance_run">Corrida / Maratona</option><option value="distance_swim">Natação</option><option value="distance_cycle">Ciclismo</option><option value="other">Outra Performance</option></select></div><div class="form-group"><label>Título:</label><input type="text" id="meta-sau-titulo"></div><div class="form-group"><label>Detalhe seu sonho:</label><textarea id="meta-sau-dream" rows="2"></textarea></div><div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div class="form-group"><label>Valor Atual:</label><input type="number" id="meta-sau-atual" step="0.1"></div><div class="form-group"><label>Valor Alvo:</label><input type="number" id="meta-sau-alvo" step="0.1"></div></div><div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div class="form-group"><label>Unidade:</label><select id="meta-sau-unit"><option value="kg">kg</option><option value="km">km</option><option value="m">m</option><option value="aulas">Aulas</option></select></div><div class="form-group"><label>Meses:</label><input type="number" id="meta-sau-meses"></div></div><button class="btn btn-sau" id="btn-save-meta-saude" onclick="salvarMetaSaude()">Registrar Meta</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-saude')">Cancelar</button></div></div>
+<div id="modal-meta-saude" class="modal-overlay escondido"><div class="modal-content"><h3>Criar Meta Física</h3><div class="form-group"><label>Qual é a sua busca?</label><select id="meta-sau-type"><option value="weight">Alteração de Peso Corporal</option><option value="distance_run">Corrida / Maratona</option><option value="distance_swim">Natação</option><option value="distance_cycle">Ciclismo</option><option value="other">Outra Performance</option></select></div><div class="form-group"><label>Título:</label><input type="text" id="meta-sau-titulo"></div><div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div class="form-group"><label>Valor Atual:</label><input type="number" id="meta-sau-atual" step="0.1"></div><div class="form-group"><label>Valor Alvo:</label><input type="number" id="meta-sau-alvo" step="0.1"></div></div><div style="display: grid; grid-template-columns: 1fr 1fr; gap:10px;"><div class="form-group"><label>Unidade:</label><select id="meta-sau-unit"><option value="kg">kg</option><option value="km">km</option><option value="m">m</option><option value="aulas">Aulas</option></select></div><div class="form-group"><label>Meses:</label><input type="number" id="meta-sau-meses"></div></div><button class="btn btn-sau" onclick="salvarMetaSaude()">Registrar Meta Esportiva</button><button class="btn btn-outline" onclick="fecharModal('modal-meta-saude')">Cancelar</button></div></div>
+<div id="modal-alimento" class="modal-overlay escondido"><div class="modal-content"><h3>Lançar Refeição Manual</h3><div class="form-group"><label>O que comeu?</label><input type="text" id="food-desc"></div><div class="form-group"><label>Qualidade Nutricional:</label><select id="food-cat"><option value="Saudável/Natural|100">🥗 Saudável / Natural</option><option value="Carboidrato Simples|50">🍞 Carboidrato Simples</option><option value="Doce/Açúcar|10">🍫 Doce / Açúcar</option><option value="Fast Food/Fritura|5">🍔 Fast Food / Fritura</option></select></div><div class="form-group"><label>Calorias (kcal):</label><input type="number" id="food-cal"></div><button class="btn btn-sau" onclick="salvarAlimento()">Adicionar ao Diário</button><button class="btn btn-outline" onclick="fecharModal('modal-alimento')">Cancelar</button></div></div>
+<div id="modal-sono" class="modal-overlay escondido"><div class="modal-content"><h3>Qualidade da Bateria</h3><div class="form-group"><label>Quantas horas dormiu?</label><input type="number" id="sono-horas" step="0.5"></div><div class="form-group"><label>Como acordou?</label><select id="sono-qualidade"><option value="Excelente">Revigorado</option><option value="Regular">Normal</option><option value="Ruim">Cansado</option></select></div><button class="btn" style="background:#8b5cf6;" onclick="salvarBiometria()">Atualizar Bateria</button><button class="btn btn-outline" onclick="fecharModal('modal-sono')">Cancelar</button></div></div>
 
 <script>const v = new Date().getTime(); document.write('<script src="app.js?v=' + v + '"><\/script>');</script>
 </body>

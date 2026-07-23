@@ -1,16 +1,27 @@
 const API_URL = "https://phisland.onrender.com"; 
-
+const API_URL = "http://127.0.0.1:8000";
 
 document.addEventListener("DOMContentLoaded", () => {
     carregarHistorico();
 });
+
+function toggleTutorial() {
+    const tut = document.getElementById('tutorial');
+    const btn = document.getElementById('btn-tut');
+    if (tut.style.display === 'block') {
+        tut.style.display = 'none';
+        btn.innerText = 'Ler Instruções';
+    } else {
+        tut.style.display = 'block';
+        btn.innerText = 'Fechar Instruções';
+    }
+}
 
 async function calcularPrevisao() {
     const btn = document.getElementById('btn-calcular');
     btn.innerText = "Calculando...";
     btn.disabled = true;
 
-    // Coletando dados das equipes + Odds inputadas pelo usuário
     const payload = {
         league_home_goals: parseFloat(document.getElementById('l-home').value) || 1.45,
         league_away_goals: parseFloat(document.getElementById('l-away').value) || 1.15,
@@ -29,7 +40,7 @@ async function calcularPrevisao() {
         away_scored_prior: parseFloat(document.getElementById('a-scored-prior').value) || 1.2,
         away_conceded_prior: parseFloat(document.getElementById('a-conceded-prior').value) || 1.5,
 
-        // Odds enviadas para o Backend processar o EV
+        // Odds
         odd_home: parseFloat(document.getElementById('odd-home').value) || 0,
         odd_draw: parseFloat(document.getElementById('odd-draw').value) || 0,
         odd_away: parseFloat(document.getElementById('odd-away').value) || 0,
@@ -61,16 +72,45 @@ async function calcularPrevisao() {
 function exibirResultados(data) {
     document.getElementById('card-resultado').style.display = 'block';
     
-    // Mostra a Aposta Recomendada (Com o cálculo de EV)
+    // Atualiza o bloco de EV Principal (Aposta Recomendada)
     const evText = document.getElementById('res-ev');
-    evText.innerText = data.predicted_winner;
-    if (data.predicted_winner.includes("Negativo") || data.predicted_winner.includes("Preencha")) {
+    evText.innerText = data.recommended_ev_bet;
+    
+    if (data.recommended_ev_bet.includes("Negativo") || data.recommended_ev_bet.includes("Insira")) {
         evText.style.color = "var(--away-color)";
     } else {
         evText.style.color = "var(--success)";
     }
 
-    document.getElementById('res-score').innerText = data.most_likely_score;
+    // Processa e desenha o Ranking de EVs
+    const evContainer = document.getElementById('ev-ranking-container');
+    const evList = document.getElementById('ev-list');
+    
+    if (data.ev_ranking && data.ev_ranking.length > 0) {
+        evContainer.style.display = 'block';
+        evList.innerHTML = '';
+        
+        data.ev_ranking.forEach(item => {
+            const evPercent = (item.ev * 100).toFixed(2);
+            const isPositive = item.ev > 0;
+            const signal = isPositive ? '+' : '';
+            const textColor = isPositive ? 'var(--success)' : 'var(--away-color)';
+            const bgColor = isPositive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
+            
+            evList.innerHTML += `
+                <div style="display: flex; justify-content: space-between; padding: 8px 12px; background: ${bgColor}; border-radius: 8px; font-size: 13px; font-weight: 600;">
+                    <span style="color: var(--text-main);">${item.bet}</span>
+                    <span style="color: ${textColor};">${signal}${evPercent}%</span>
+                </div>
+            `;
+        });
+    } else {
+        evContainer.style.display = 'none';
+    }
+
+    // Organiza a visualização do Vencedor e Placar Base
+    document.getElementById('res-score').innerHTML = `${data.most_likely_score} <br> <span style="font-size: 14px; color: var(--text-muted);">Favorito Matemático: <strong>${data.predicted_winner}</strong></span>`;
+    
     document.getElementById('res-xg-home').innerText = data.home_xg;
     document.getElementById('res-xg-away').innerText = data.away_xg;
     

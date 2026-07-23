@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Predictor PRO - Poisson Bayesiano</title>
+    <title>Predictor PRO - Poisson + EV</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -32,9 +32,9 @@
         .card-header { font-size: 15px; font-weight: 600; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;}
         
         .tutorial-box { background: #eff6ff; border: 1px solid #bfdbfe; padding: 15px; border-radius: 12px; font-size: 13px; color: #1e3a8a; line-height: 1.5; margin-bottom: 20px; display: none;}
-        .tutorial-box strong { color: #1e40af; }
         
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
         
         .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 15px; }
         .form-group label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
@@ -44,7 +44,6 @@
         .btn { width: 100%; padding: 14px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; color: white; background: var(--primary); }
         .btn:hover { background: var(--primary-hover); }
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 8px 12px; font-size: 12px; }
-        .btn-outline:hover { background: #f9fafb; }
         
         .prob-bar { width: 100%; height: 16px; background: #f3f4f6; border-radius: 8px; display: flex; overflow: hidden; margin: 15px 0;}
         .prob-home { background: var(--home-color); transition: width 0.8s ease; }
@@ -65,38 +64,26 @@
 <div class="container">
     <div class="header">
         <h1>Predictor PRO 🎯</h1>
-        <p>Motor de Poisson Bayesiano (Resolve Início de Temporada)</p>
+        <p>Motor de Poisson Bayesiano + Expected Value (EV)</p>
     </div>
 
+    <!-- Dados Base -->
     <div class="card">
-        <div class="card-header">
-            <span>Passo a Passo (Como Usar)</span>
-            <button class="btn-outline" onclick="toggleTutorial()" id="btn-tut">Ler Instruções</button>
-        </div>
-        <div class="tutorial-box" id="tutorial">
-            <p><strong>Por que este modelo é melhor?</strong><br>Ele utiliza a Matemática Bayesiana. Para resolver a "falta de dados" no início da temporada, ele puxa as médias da temporada passada e faz uma fusão inteligente com a temporada atual.</p>
-            <ol style="margin: 10px 0; padding-left: 20px;">
-                <li>Busque os dados no <strong>FBRef</strong> ou <strong>SofaScore</strong>. Recomendamos usar <strong>xG (Expected Goals)</strong> em vez de gols reais para maior precisão.</li>
-                <li><strong>Liga:</strong> Insira a média de gols da liga em que jogam.</li>
-                <li><strong>Temporada Atual:</strong> Preencha o TOTAL de gols marcados/sofridos no campeonato atual e quantos jogos o time fez.</li>
-                <li><strong>Temporada Passada (O Segredo):</strong> Insira a MÉDIA (por jogo) de gols marcados e sofridos do time na temporada anterior. Se o campeonato já passou da 15ª rodada, o modelo ignorará o passado automaticamente.</li>
-            </ol>
-        </div>
-
-        <div class="card-header" style="color: var(--text-main);">📊 Dados do Campeonato</div>
+        <div class="card-header"><span>📊 Dados do Campeonato</span></div>
         <div class="grid-2">
             <div class="form-group"><label>Média Gols Casa (Liga):</label><input type="number" id="l-home" step="0.01" value="1.45"></div>
             <div class="form-group"><label>Média Gols Fora (Liga):</label><input type="number" id="l-away" step="0.01" value="1.15"></div>
         </div>
     </div>
 
+    <!-- Mandante -->
     <div class="card" style="border-top: 4px solid var(--home-color);">
         <div class="card-header" style="color: var(--home-color);">🏠 Mandante</div>
         <div class="form-group"><label>Nome da Equipe:</label><input type="text" id="h-name" placeholder="Ex: Flamengo"></div>
         <div class="form-group"><label>Jogos Disputados (Temp. Atual):</label><input type="number" id="h-games" value="3"></div>
         <div class="grid-2">
-            <div class="form-group"><label>TOTAL Gols/xG Marcados:</label><input type="number" id="h-scored-curr" step="0.01" placeholder="Nesta temporada"></div>
-            <div class="form-group"><label>TOTAL Gols/xG Sofridos:</label><input type="number" id="h-conceded-curr" step="0.01" placeholder="Nesta temporada"></div>
+            <div class="form-group"><label>TOTAL Gols/xG Marcados:</label><input type="number" id="h-scored-curr" step="0.01" placeholder="Temporada Atual"></div>
+            <div class="form-group"><label>TOTAL Gols/xG Sofridos:</label><input type="number" id="h-conceded-curr" step="0.01" placeholder="Temporada Atual"></div>
         </div>
         <div style="background: #f3f4f6; padding: 10px; border-radius: 8px; margin-top: 10px;">
             <label style="font-size: 11px; font-weight: bold; color: var(--text-muted); display: block; margin-bottom: 8px;">MÉDIAS DA TEMPORADA PASSADA (Âncora)</label>
@@ -107,13 +94,14 @@
         </div>
     </div>
 
+    <!-- Visitante -->
     <div class="card" style="border-top: 4px solid var(--away-color);">
         <div class="card-header" style="color: var(--away-color);">✈️ Visitante</div>
         <div class="form-group"><label>Nome da Equipe:</label><input type="text" id="a-name" placeholder="Ex: Palmeiras"></div>
         <div class="form-group"><label>Jogos Disputados (Temp. Atual):</label><input type="number" id="a-games" value="3"></div>
         <div class="grid-2">
-            <div class="form-group"><label>TOTAL Gols/xG Marcados:</label><input type="number" id="a-scored-curr" step="0.01" placeholder="Nesta temporada"></div>
-            <div class="form-group"><label>TOTAL Gols/xG Sofridos:</label><input type="number" id="a-conceded-curr" step="0.01" placeholder="Nesta temporada"></div>
+            <div class="form-group"><label>TOTAL Gols/xG Marcados:</label><input type="number" id="a-scored-curr" step="0.01" placeholder="Temporada Atual"></div>
+            <div class="form-group"><label>TOTAL Gols/xG Sofridos:</label><input type="number" id="a-conceded-curr" step="0.01" placeholder="Temporada Atual"></div>
         </div>
         <div style="background: #f3f4f6; padding: 10px; border-radius: 8px; margin-top: 10px;">
             <label style="font-size: 11px; font-weight: bold; color: var(--text-muted); display: block; margin-bottom: 8px;">MÉDIAS DA TEMPORADA PASSADA (Âncora)</label>
@@ -124,11 +112,32 @@
         </div>
     </div>
 
-    <button class="btn" onclick="calcularPrevisao()" id="btn-calcular">Rodar Algoritmo & Salvar</button>
+    <!-- Painel de ODDS -->
+    <div class="card" style="border-top: 4px solid var(--success); background: #f0fdf4;">
+        <div class="card-header" style="color: var(--success); border-bottom-color: #bbf7d0;">💰 Odds da Casa de Apostas</div>
+        <div class="grid-3">
+            <div class="form-group"><label>Casa (1):</label><input type="number" id="odd-home" step="0.01" placeholder="2.10"></div>
+            <div class="form-group"><label>Empate (X):</label><input type="number" id="odd-draw" step="0.01" placeholder="3.20"></div>
+            <div class="form-group"><label>Fora (2):</label><input type="number" id="odd-away" step="0.01" placeholder="3.50"></div>
+        </div>
+        <div class="grid-2">
+            <div class="form-group"><label>Dupla Chance Casa (1X):</label><input type="number" id="odd-dc-home" step="0.01" placeholder="1.30"></div>
+            <div class="form-group"><label>Dupla Chance Fora (X2):</label><input type="number" id="odd-dc-away" step="0.01" placeholder="1.65"></div>
+        </div>
+    </div>
+
+    <button class="btn" onclick="calcularPrevisao()" id="btn-calcular">Calcular Algoritmo & Encontrar Valor</button>
 
     <!-- RESULTADO -->
     <div id="card-resultado" class="card" style="margin-top: 20px; display: none;">
         <div class="card-header">🎯 Veredito do Algoritmo</div>
+        
+        <!-- Onde a Mágica do EV acontece -->
+        <div class="result-stat" style="background: #ecfdf5; border-color: #a7f3d0; margin-bottom: 20px;">
+            <span style="color: #065f46;">Aposta Recomendada (Maior EV)</span>
+            <strong style="color: var(--success); font-size: 20px;" id="res-ev">--</strong>
+        </div>
+
         <div class="result-stat" style="background: #eff6ff; border-color: #bfdbfe;">
             <span style="color: #1e3a8a;">Placar Mais Provável (Moda)</span>
             <strong style="color: var(--primary); font-size: 32px;" id="res-score">--</strong>

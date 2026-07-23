@@ -6,7 +6,7 @@ from pydantic import BaseModel
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-app = FastAPI(title="Predictor IA - Poisson + EV")
+app = FastAPI(title="Predictor IA - Poisson Bayesiano + EV Ranking")
 
 app.add_middleware(
     CORSMiddleware,
@@ -63,7 +63,7 @@ class MatchData(BaseModel):
     away_scored_prior: float
     away_conceded_prior: float
 
-    # Novas variáveis para as Odds
+    # Variáveis para as Odds
     odd_home: float = 0.0
     odd_draw: float = 0.0
     odd_away: float = 0.0
@@ -91,7 +91,7 @@ def predict_match(data: MatchData):
     eff_away_scored = bayesian_average(data.away_scored_current, data.away_games_played, data.away_scored_prior)
     eff_away_conceded = bayesian_average(data.away_conceded_current, data.away_games_played, data.away_conceded_prior)
 
-    # 2. Força de Ataque e Defesa
+    # 2. Força de Ataque e Defesa Relativa à Liga
     home_attack = eff_home_scored / data.league_home_goals if data.league_home_goals > 0 else 1.0
     home_defense = eff_home_conceded / data.league_away_goals if data.league_away_goals > 0 else 1.0
     
@@ -118,7 +118,6 @@ def predict_match(data: MatchData):
             else: away_win_prob += prob
 
     # 5. Cálculo do Expected Value (EV)
-    # Fórmula: (Probabilidade_Decimal * Odd) - 1
     evs = {
         f"Vitória {data.home_team_name}": (home_win_prob * data.odd_home) - 1 if data.odd_home > 0 else -1,
         "Empate": (draw_prob * data.odd_draw) - 1 if data.odd_draw > 0 else -1,
@@ -127,16 +126,27 @@ def predict_match(data: MatchData):
         f"X2 ({data.away_team_name})": ((away_win_prob + draw_prob) * data.odd_dc_away) - 1 if data.odd_dc_away > 0 else -1
     }
 
+    # Ordena as apostas do maior EV para o menor
+    sorted_evs = sorted(evs.items(), key=lambda item: item[1], reverse=True)
+    # Filtra apenas os que tiveram odds preenchidas (!= -1)
+    ev_ranking = [{"bet": k, "ev": v} for k, v in sorted_evs if v != -1]
+
     best_bet_name = max(evs, key=evs.get)
     best_ev = evs[best_bet_name]
 
-    # Decide a sugestão baseada no EV
+    # A. Descobre quem é o favorito matematicamente (Pura %)
+    pure_winner = data.home_team_name
+    if away_win_prob > home_win_prob and away_win_prob > draw_prob:
+        pure_winner = data.away_team_name
+    elif draw_prob > home_win_prob and draw_prob > away_win_prob:
+        pure_winner = "Empate"
+
+    # B. Define a aposta sugerida baseada APENAS no lucro (EV)
     if best_ev > 0:
         recommended_bet = f"{best_bet_name} (EV: +{round(best_ev * 100, 2)}%)"
     else:
-        # Fallback caso não tenha inserido odds ou todas sejam EV negativo
         if all(v == -1 for v in evs.values()):
-            recommended_bet = "Preencha as Odds para calcular o EV"
+            recommended_bet = "Insira as Odds para calcular o EV"
         else:
             recommended_bet = "EV Negativo (Fique de fora)"
 
@@ -159,10 +169,14 @@ def predict_match(data: MatchData):
         new_id = None
 
     return {
-        "id": new_id, "home_team": data.home_team_name, "away_team": data.away_team_name,
+        "id": new_id, 
+        "home_team": data.home_team_name, "away_team": data.away_team_name,
         "home_xg": round(home_xg, 2), "away_xg": round(away_xg, 2),
         "home_win_pct": h_pct, "draw_pct": d_pct, "away_win_pct": a_pct,
-        "most_likely_score": best_score, "predicted_winner": recommended_bet
+        "most_likely_score": best_score, 
+        "predicted_winner": pure_winner,
+        "recommended_ev_bet": recommended_bet,
+        "ev_ranking": ev_ranking
     }
 
 @app.get("/predictions")

@@ -1,10 +1,20 @@
-// Substitua pela URL do seu servidor FastAPI (Render ou localhost)
-const API_URL = "http://127.0.0.1:8000"; 
+const API_URL = "http://127.0.0.1:8000";
 
-// Ao carregar a página, já puxamos o histórico
 document.addEventListener("DOMContentLoaded", () => {
     carregarHistorico();
 });
+
+function toggleTutorial() {
+    const tut = document.getElementById('tutorial');
+    const btn = document.getElementById('btn-tut');
+    if (tut.style.display === 'block') {
+        tut.style.display = 'none';
+        btn.innerText = 'Ler Instruções';
+    } else {
+        tut.style.display = 'block';
+        btn.innerText = 'Fechar Instruções';
+    }
+}
 
 async function calcularPrevisao() {
     const btn = document.getElementById('btn-calcular');
@@ -12,14 +22,22 @@ async function calcularPrevisao() {
     btn.disabled = true;
 
     const payload = {
-        league_home_goals: parseFloat(document.getElementById('l-home').value) || 0,
-        league_away_goals: parseFloat(document.getElementById('l-away').value) || 0,
+        league_home_goals: parseFloat(document.getElementById('l-home').value) || 1.45,
+        league_away_goals: parseFloat(document.getElementById('l-away').value) || 1.15,
+        
         home_team_name: document.getElementById('h-name').value || "Mandante",
-        home_scored: parseFloat(document.getElementById('h-scored').value) || 0,
-        home_conceded: parseFloat(document.getElementById('h-conceded').value) || 0,
+        home_games_played: parseInt(document.getElementById('h-games').value) || 0,
+        home_scored_current: parseFloat(document.getElementById('h-scored-curr').value) || 0,
+        home_conceded_current: parseFloat(document.getElementById('h-conceded-curr').value) || 0,
+        home_scored_prior: parseFloat(document.getElementById('h-scored-prior').value) || 1.5,
+        home_conceded_prior: parseFloat(document.getElementById('h-conceded-prior').value) || 1.0,
+
         away_team_name: document.getElementById('a-name').value || "Visitante",
-        away_scored: parseFloat(document.getElementById('a-scored').value) || 0,
-        away_conceded: parseFloat(document.getElementById('a-conceded').value) || 0
+        away_games_played: parseInt(document.getElementById('a-games').value) || 0,
+        away_scored_current: parseFloat(document.getElementById('a-scored-curr').value) || 0,
+        away_conceded_current: parseFloat(document.getElementById('a-conceded-curr').value) || 0,
+        away_scored_prior: parseFloat(document.getElementById('a-scored-prior').value) || 1.2,
+        away_conceded_prior: parseFloat(document.getElementById('a-conceded-prior').value) || 1.5
     };
 
     try {
@@ -32,33 +50,31 @@ async function calcularPrevisao() {
         if (response.ok) {
             const data = await response.json();
             exibirResultados(data);
-            carregarHistorico(); // Atualiza a lista na hora
+            carregarHistorico();
             confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
         }
     } catch (error) {
-        console.error("Erro:", error);
-        alert("Erro na API.");
+        alert("Erro na conexão. Verifique se o FastAPI está rodando.");
     } finally {
-        btn.innerText = "Calcular & Salvar";
+        btn.innerText = "Rodar Algoritmo & Salvar";
         btn.disabled = false;
     }
 }
 
 function exibirResultados(data) {
-    document.getElementById('card-resultado').classList.remove('escondido');
-    document.getElementById('res-winner').innerText = data.predicted_winner;
+    document.getElementById('card-resultado').style.display = 'block';
     document.getElementById('res-score').innerText = data.most_likely_score;
+    document.getElementById('res-xg-home').innerText = data.home_xg;
+    document.getElementById('res-xg-away').innerText = data.away_xg;
     
     document.getElementById('bar-home').style.width = `${data.home_win_pct}%`;
     document.getElementById('bar-draw').style.width = `${data.draw_pct}%`;
     document.getElementById('bar-away').style.width = `${data.away_win_pct}%`;
 
-    document.getElementById('txt-home').innerText = `Casa: ${data.home_win_pct}%`;
+    document.getElementById('txt-home').innerText = `${data.home_team}: ${data.home_win_pct}%`;
     document.getElementById('txt-draw').innerText = `Empate: ${data.draw_pct}%`;
-    document.getElementById('txt-away').innerText = `Fora: ${data.away_win_pct}%`;
+    document.getElementById('txt-away').innerText = `${data.away_team}: ${data.away_win_pct}%`;
 }
-
-// === LÓGICA DE HISTÓRICO ===
 
 async function carregarHistorico() {
     try {
@@ -70,48 +86,47 @@ async function carregarHistorico() {
         container.innerHTML = "";
 
         if (dados.length === 0) {
-            container.innerHTML = "<p style='font-size:12px; color:var(--text-muted); text-align:center;'>Nenhuma previsão registrada.</p>";
+            container.innerHTML = "<p style='font-size:13px; color:var(--text-muted); text-align:center;'>Nenhum histórico.</p>";
             return;
         }
 
         dados.forEach(p => {
-            // Estilizando a cor da borda de acordo com o Status
-            let borderColor = "#33353b";
-            let statusBadge = `background: rgba(255,255,255,0.1); color: white;`;
+            let borderColor = "#e5e7eb";
+            let badgeStyle = "background: #f3f4f6; color: #4b5563;";
             
             if (p.status.includes('Green')) {
-                borderColor = "var(--sau-color)";
-                statusBadge = `background: rgba(16, 185, 129, 0.2); color: var(--sau-color);`;
+                borderColor = "var(--success)";
+                badgeStyle = "background: #d1fae5; color: #047857;";
             } else if (p.status.includes('Red')) {
-                borderColor = "var(--danger-color)";
-                statusBadge = `background: rgba(239, 68, 68, 0.2); color: var(--danger-color);`;
-            } else {
-                borderColor = "var(--warn-color)";
-                statusBadge = `background: rgba(245, 158, 11, 0.2); color: var(--warn-color);`;
+                borderColor = "var(--away-color)";
+                badgeStyle = "background: #fee2e2; color: #b91c1c;";
+            } else if (p.status.includes('Void')) {
+                borderColor = "var(--draw-color)";
+                badgeStyle = "background: #fef3c7; color: #b45309;";
             }
 
             container.innerHTML += `
-                <div class="history-item" style="border-left: 3px solid ${borderColor};">
-                    <div class="history-header">
-                        <div class="history-title">${p.home_team} vs ${p.away_team}</div>
-                        <span class="badge" style="${statusBadge}">${p.status}</span>
+                <div class="history-item" style="border-left: 4px solid ${borderColor};">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 700; font-size: 14px; color: var(--text-main);">${p.home_team} x ${p.away_team}</span>
+                        <span class="badge" style="${badgeStyle}">${p.status}</span>
                     </div>
-                    <div class="history-sub">
-                        🎯 Previsto: <strong>${p.predicted_winner}</strong> (${p.most_likely_score}) <br>
-                        📊 Odds Modeladas: C ${p.home_win_pct}% | E ${p.draw_pct}% | F ${p.away_win_pct}%
+                    <div style="font-size: 12px; color: var(--text-muted);">
+                        Sugestão: <strong>${p.predicted_winner}</strong> (${p.most_likely_score}) <br>
+                        Odds: Casa ${p.home_win_pct}% | Empate ${p.draw_pct}% | Fora ${p.away_win_pct}%
                     </div>
                     
-                    <!-- Botões de Ação para validar se o modelo acertou -->
-                    <div style="display: flex; gap: 8px; margin-top: 10px;">
-                        <button class="btn-small bg-green" onclick="atualizarStatus(${p.id}, '✅ Green')">Acertou (Green)</button>
-                        <button class="btn-small bg-red" onclick="atualizarStatus(${p.id}, '❌ Red')">Errou (Red)</button>
-                        <button class="btn-small" style="background: rgba(255,255,255,0.05);" onclick="atualizarStatus(${p.id}, 'Pendente ⏳')">Reset</button>
+                    <div style="display: flex; gap: 8px; margin-top: 5px;">
+                        <button class="btn-small" style="background: #10b981; color: white;" onclick="atualizarStatus(${p.id}, '✅ Green')">Green</button>
+                        <button class="btn-small" style="background: #ef4444; color: white;" onclick="atualizarStatus(${p.id}, '❌ Red')">Red</button>
+                        <button class="btn-small" style="background: #f59e0b; color: white;" onclick="atualizarStatus(${p.id}, '➖ Void')">Devolvida</button>
+                        <button class="btn-small" style="background: #e5e7eb; color: #4b5563;" onclick="atualizarStatus(${p.id}, 'Pendente ⏳')">Reset</button>
                     </div>
                 </div>
             `;
         });
     } catch (error) {
-        console.error("Erro ao puxar histórico.", error);
+        console.error("Erro histórico:", error);
     }
 }
 
@@ -122,8 +137,6 @@ async function atualizarStatus(id, novoStatus) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: novoStatus })
         });
-        carregarHistorico(); // Atualiza a lista para refletir a nova cor
-    } catch (error) {
-        alert("Falha ao atualizar o status.");
-    }
+        carregarHistorico(); 
+    } catch (error) {}
 }

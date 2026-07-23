@@ -1,26 +1,16 @@
 const API_URL = "https://phisland.onrender.com"; 
 
+
 document.addEventListener("DOMContentLoaded", () => {
     carregarHistorico();
 });
-
-function toggleTutorial() {
-    const tut = document.getElementById('tutorial');
-    const btn = document.getElementById('btn-tut');
-    if (tut.style.display === 'block') {
-        tut.style.display = 'none';
-        btn.innerText = 'Ler Instruções';
-    } else {
-        tut.style.display = 'block';
-        btn.innerText = 'Fechar Instruções';
-    }
-}
 
 async function calcularPrevisao() {
     const btn = document.getElementById('btn-calcular');
     btn.innerText = "Calculando...";
     btn.disabled = true;
 
+    // Coletando dados das equipes + Odds inputadas pelo usuário
     const payload = {
         league_home_goals: parseFloat(document.getElementById('l-home').value) || 1.45,
         league_away_goals: parseFloat(document.getElementById('l-away').value) || 1.15,
@@ -37,7 +27,14 @@ async function calcularPrevisao() {
         away_scored_current: parseFloat(document.getElementById('a-scored-curr').value) || 0,
         away_conceded_current: parseFloat(document.getElementById('a-conceded-curr').value) || 0,
         away_scored_prior: parseFloat(document.getElementById('a-scored-prior').value) || 1.2,
-        away_conceded_prior: parseFloat(document.getElementById('a-conceded-prior').value) || 1.5
+        away_conceded_prior: parseFloat(document.getElementById('a-conceded-prior').value) || 1.5,
+
+        // Odds enviadas para o Backend processar o EV
+        odd_home: parseFloat(document.getElementById('odd-home').value) || 0,
+        odd_draw: parseFloat(document.getElementById('odd-draw').value) || 0,
+        odd_away: parseFloat(document.getElementById('odd-away').value) || 0,
+        odd_dc_home: parseFloat(document.getElementById('odd-dc-home').value) || 0,
+        odd_dc_away: parseFloat(document.getElementById('odd-dc-away').value) || 0
     };
 
     try {
@@ -56,13 +53,23 @@ async function calcularPrevisao() {
     } catch (error) {
         alert("Erro na conexão. Verifique se o FastAPI está rodando.");
     } finally {
-        btn.innerText = "Rodar Algoritmo & Salvar";
+        btn.innerText = "Calcular Algoritmo & Encontrar Valor";
         btn.disabled = false;
     }
 }
 
 function exibirResultados(data) {
     document.getElementById('card-resultado').style.display = 'block';
+    
+    // Mostra a Aposta Recomendada (Com o cálculo de EV)
+    const evText = document.getElementById('res-ev');
+    evText.innerText = data.predicted_winner;
+    if (data.predicted_winner.includes("Negativo") || data.predicted_winner.includes("Preencha")) {
+        evText.style.color = "var(--away-color)";
+    } else {
+        evText.style.color = "var(--success)";
+    }
+
     document.getElementById('res-score').innerText = data.most_likely_score;
     document.getElementById('res-xg-home').innerText = data.home_xg;
     document.getElementById('res-xg-away').innerText = data.away_xg;
@@ -112,8 +119,9 @@ async function carregarHistorico() {
                         <span class="badge" style="${badgeStyle}">${p.status}</span>
                     </div>
                     <div style="font-size: 12px; color: var(--text-muted);">
-                        Sugestão: <strong>${p.predicted_winner}</strong> (${p.most_likely_score}) <br>
-                        Odds: Casa ${p.home_win_pct}% | Empate ${p.draw_pct}% | Fora ${p.away_win_pct}%
+                        Sugestão (EV+): <strong style="color: var(--primary);">${p.predicted_winner}</strong> <br>
+                        Odds: Casa ${p.home_win_pct}% | Empate ${p.draw_pct}% | Fora ${p.away_win_pct}% <br>
+                        Placar Base: ${p.most_likely_score}
                     </div>
                     
                     <div style="display: flex; gap: 8px; margin-top: 5px;">

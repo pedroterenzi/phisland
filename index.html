@@ -3,109 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Predictor IA - Poisson</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>Predictor PRO - Poisson Bayesiano</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        :root { --bg-color: #09090b; --card-bg: #131418; --text-color: #f4f4f5; --text-muted: #a1a1aa; --border-color: #27272a; --fin-color: #3b82f6; --sau-color: #10b981; --danger-color: #ef4444; --warn-color: #f59e0b;}
-        * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); margin: 0; display: flex; justify-content: center; padding: 20px;}
-        .app-container { width: 100%; max-width: 500px; padding-bottom: 50px;}
+        :root { 
+            --bg-body: #f3f4f6; 
+            --bg-card: #ffffff; 
+            --text-main: #111827; 
+            --text-muted: #6b7280; 
+            --border: #e5e7eb; 
+            --primary: #2563eb; 
+            --primary-hover: #1d4ed8;
+            --home-color: #3b82f6; 
+            --draw-color: #f59e0b; 
+            --away-color: #ef4444;
+            --success: #10b981;
+        }
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-body); color: var(--text-main); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 600px; padding-bottom: 50px; }
         
-        .card { background: linear-gradient(145deg, #16171a 0%, #111215 100%); border: 1px solid var(--border-color); padding: 20px; border-radius: 20px; margin-bottom: 15px; }
-        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+        .header { text-align: center; margin-bottom: 25px; }
+        .header h1 { margin: 0; color: var(--primary); font-size: 24px; font-weight: 700; }
+        .header p { margin: 5px 0 0 0; font-size: 14px; color: var(--text-muted); }
+
+        .card { background: var(--bg-card); border: 1px solid var(--border); padding: 24px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        .card-header { font-size: 15px; font-weight: 600; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;}
+        
+        .tutorial-box { background: #eff6ff; border: 1px solid #bfdbfe; padding: 15px; border-radius: 12px; font-size: 13px; color: #1e3a8a; line-height: 1.5; margin-bottom: 20px; display: none;}
+        .tutorial-box strong { color: #1e40af; }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 15px; }
         .form-group label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
-        .form-group input { background: #18191c; border: 1px solid #33353b; padding: 12px; border-radius: 10px; color: white; font-size: 14px; width: 100%;}
+        .form-group input { background: #f9fafb; border: 1px solid var(--border); padding: 10px 12px; border-radius: 8px; color: var(--text-main); font-size: 14px; transition: 0.2s;}
+        .form-group input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
         
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn { width: 100%; padding: 14px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; color: white; background: var(--primary); }
+        .btn:hover { background: var(--primary-hover); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 8px 12px; font-size: 12px; }
+        .btn-outline:hover { background: #f9fafb; }
         
-        .btn { width: 100%; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: 800; cursor: pointer; border: none; transition: 0.2s; color: white;}
-        .btn-ai { background: linear-gradient(90deg, var(--fin-color), var(--sau-color)); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);}
-        .btn:active { transform: scale(0.98); }
-        .btn-small { padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; border: none; color: white; transition: 0.2s;}
-        .bg-green { background: rgba(16, 185, 129, 0.2); color: var(--sau-color); border: 1px solid var(--sau-color); }
-        .bg-red { background: rgba(239, 68, 68, 0.2); color: var(--danger-color); border: 1px solid var(--danger-color); }
+        .prob-bar { width: 100%; height: 16px; background: #f3f4f6; border-radius: 8px; display: flex; overflow: hidden; margin: 15px 0;}
+        .prob-home { background: var(--home-color); transition: width 0.8s ease; }
+        .prob-draw { background: var(--draw-color); transition: width 0.8s ease; }
+        .prob-away { background: var(--away-color); transition: width 0.8s ease; }
         
-        .escondido { display: none !important; }
-        
-        .result-box { text-align: center; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); padding: 20px; border-radius: 15px; margin-top: 15px;}
-        .result-title { font-size: 11px; color: var(--text-muted); font-weight:bold; text-transform:uppercase; letter-spacing: 0.5px; }
-        .result-value { font-size: 28px; color: white; font-weight: 800; margin: 5px 0;}
-        
-        .prob-bar { width: 100%; height: 12px; background: #27272a; border-radius: 6px; display: flex; overflow: hidden; margin-top: 15px;}
-        .prob-home { background: var(--fin-color); transition: width 0.5s; }
-        .prob-draw { background: var(--warn-color); transition: width 0.5s; }
-        .prob-away { background: var(--danger-color); transition: width 0.5s; }
-        
-        /* Estilos do Histórico */
-        .history-item { background: #18191c; padding: 12px; border-radius: 12px; border: 1px solid #2a2c32; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px;}
-        .history-header { display: flex; justify-content: space-between; align-items: center; }
-        .history-title { font-size: 14px; font-weight: bold; color: white; }
-        .history-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px;}
-        .badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; }
+        .result-stat { background: #f9fafb; border: 1px solid var(--border); border-radius: 12px; padding: 15px; text-align: center; }
+        .result-stat span { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+        .result-stat strong { display: block; font-size: 24px; color: var(--text-main); margin-top: 5px; }
+
+        .history-item { padding: 15px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px; background: #fafafa;}
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+        .btn-small { padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; }
     </style>
 </head>
 <body>
 
-<div class="app-container">
-    <div class="card">
-        <h2 style="text-align: center; margin-top: 0; color: var(--fin-color);">⚡ Predictor IA</h2>
-        <p style="text-align: center; font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Modelo de Poisson</p>
-        
-        <div class="card" style="padding: 15px; background: #111215;">
-            <div class="grid-2">
-                <div class="form-group"><label>Liga - Média Gols Casa:</label><input type="number" id="l-home" step="0.01"></div>
-                <div class="form-group"><label>Liga - Média Gols Fora:</label><input type="number" id="l-away" step="0.01"></div>
-            </div>
-        </div>
-
-        <div class="card" style="padding: 15px; background: #111215; border-color: var(--fin-color);">
-            <div class="form-group"><label style="color: var(--fin-color);">🏠 Mandante</label><input type="text" id="h-name"></div>
-            <div class="grid-2">
-                <div class="form-group"><label>Marcados (Casa):</label><input type="number" id="h-scored" step="0.01"></div>
-                <div class="form-group"><label>Sofridos (Casa):</label><input type="number" id="h-conceded" step="0.01"></div>
-            </div>
-        </div>
-
-        <div class="card" style="padding: 15px; background: #111215; border-color: var(--danger-color);">
-            <div class="form-group"><label style="color: var(--danger-color);">✈️ Visitante</label><input type="text" id="a-name"></div>
-            <div class="grid-2">
-                <div class="form-group"><label>Marcados (Fora):</label><input type="number" id="a-scored" step="0.01"></div>
-                <div class="form-group"><label>Sofridos (Fora):</label><input type="number" id="a-conceded" step="0.01"></div>
-            </div>
-        </div>
-
-        <button class="btn btn-ai" onclick="calcularPrevisao()" id="btn-calcular">Calcular & Salvar</button>
+<div class="container">
+    <div class="header">
+        <h1>Predictor PRO 🎯</h1>
+        <p>Motor de Poisson Bayesiano (Resolve Início de Temporada)</p>
     </div>
 
-    <!-- ÁREA DE RESULTADOS -->
-    <div id="card-resultado" class="card escondido">
-        <h3 style="text-align: center; margin-top:0;">📊 Veredito da Máquina</h3>
-        <div class="result-box">
-            <div class="result-title">Ganhador Previsto</div>
-            <div class="result-value" id="res-winner">--</div>
-            <div style="font-size: 12px; color: var(--text-muted); margin-top:5px;">Placar Mais Provável: <strong style="color:white;" id="res-score">--</strong></div>
+    <div class="card">
+        <div class="card-header">
+            <span>Passo a Passo (Como Usar)</span>
+            <button class="btn-outline" onclick="toggleTutorial()" id="btn-tut">Ler Instruções</button>
         </div>
+        <div class="tutorial-box" id="tutorial">
+            <p><strong>Por que este modelo é melhor?</strong><br>Ele utiliza a Matemática Bayesiana. Para resolver a "falta de dados" no início da temporada, ele puxa as médias da temporada passada e faz uma fusão inteligente com a temporada atual.</p>
+            <ol style="margin: 10px 0; padding-left: 20px;">
+                <li>Busque os dados no <strong>FBRef</strong> ou <strong>SofaScore</strong>. Recomendamos usar <strong>xG (Expected Goals)</strong> em vez de gols reais para maior precisão.</li>
+                <li><strong>Liga:</strong> Insira a média de gols da liga em que jogam.</li>
+                <li><strong>Temporada Atual:</strong> Preencha o TOTAL de gols marcados/sofridos no campeonato atual e quantos jogos o time fez.</li>
+                <li><strong>Temporada Passada (O Segredo):</strong> Insira a MÉDIA (por jogo) de gols marcados e sofridos do time na temporada anterior. Se o campeonato já passou da 15ª rodada, o modelo ignorará o passado automaticamente.</li>
+            </ol>
+        </div>
+
+        <div class="card-header" style="color: var(--text-main);">📊 Dados do Campeonato</div>
+        <div class="grid-2">
+            <div class="form-group"><label>Média Gols Casa (Liga):</label><input type="number" id="l-home" step="0.01" value="1.45"></div>
+            <div class="form-group"><label>Média Gols Fora (Liga):</label><input type="number" id="l-away" step="0.01" value="1.15"></div>
+        </div>
+    </div>
+
+    <div class="card" style="border-top: 4px solid var(--home-color);">
+        <div class="card-header" style="color: var(--home-color);">🏠 Mandante</div>
+        <div class="form-group"><label>Nome da Equipe:</label><input type="text" id="h-name" placeholder="Ex: Flamengo"></div>
+        <div class="form-group"><label>Jogos Disputados (Temp. Atual):</label><input type="number" id="h-games" value="3"></div>
+        <div class="grid-2">
+            <div class="form-group"><label>TOTAL Gols/xG Marcados:</label><input type="number" id="h-scored-curr" step="0.01" placeholder="Nesta temporada"></div>
+            <div class="form-group"><label>TOTAL Gols/xG Sofridos:</label><input type="number" id="h-conceded-curr" step="0.01" placeholder="Nesta temporada"></div>
+        </div>
+        <div style="background: #f3f4f6; padding: 10px; border-radius: 8px; margin-top: 10px;">
+            <label style="font-size: 11px; font-weight: bold; color: var(--text-muted); display: block; margin-bottom: 8px;">MÉDIAS DA TEMPORADA PASSADA (Âncora)</label>
+            <div class="grid-2">
+                <div class="form-group" style="margin:0;"><label>Média Marcados:</label><input type="number" id="h-scored-prior" step="0.01" value="1.80"></div>
+                <div class="form-group" style="margin:0;"><label>Média Sofridos:</label><input type="number" id="h-conceded-prior" step="0.01" value="0.90"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="border-top: 4px solid var(--away-color);">
+        <div class="card-header" style="color: var(--away-color);">✈️ Visitante</div>
+        <div class="form-group"><label>Nome da Equipe:</label><input type="text" id="a-name" placeholder="Ex: Palmeiras"></div>
+        <div class="form-group"><label>Jogos Disputados (Temp. Atual):</label><input type="number" id="a-games" value="3"></div>
+        <div class="grid-2">
+            <div class="form-group"><label>TOTAL Gols/xG Marcados:</label><input type="number" id="a-scored-curr" step="0.01" placeholder="Nesta temporada"></div>
+            <div class="form-group"><label>TOTAL Gols/xG Sofridos:</label><input type="number" id="a-conceded-curr" step="0.01" placeholder="Nesta temporada"></div>
+        </div>
+        <div style="background: #f3f4f6; padding: 10px; border-radius: 8px; margin-top: 10px;">
+            <label style="font-size: 11px; font-weight: bold; color: var(--text-muted); display: block; margin-bottom: 8px;">MÉDIAS DA TEMPORADA PASSADA (Âncora)</label>
+            <div class="grid-2">
+                <div class="form-group" style="margin:0;"><label>Média Marcados:</label><input type="number" id="a-scored-prior" step="0.01" value="1.50"></div>
+                <div class="form-group" style="margin:0;"><label>Média Sofridos:</label><input type="number" id="a-conceded-prior" step="0.01" value="1.10"></div>
+            </div>
+        </div>
+    </div>
+
+    <button class="btn" onclick="calcularPrevisao()" id="btn-calcular">Rodar Algoritmo & Salvar</button>
+
+    <!-- RESULTADO -->
+    <div id="card-resultado" class="card" style="margin-top: 20px; display: none;">
+        <div class="card-header">🎯 Veredito do Algoritmo</div>
+        <div class="result-stat" style="background: #eff6ff; border-color: #bfdbfe;">
+            <span style="color: #1e3a8a;">Placar Mais Provável (Moda)</span>
+            <strong style="color: var(--primary); font-size: 32px;" id="res-score">--</strong>
+        </div>
+        
         <div style="margin-top: 20px;">
+            <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700;">
+                <span style="color: var(--home-color);" id="txt-home">Casa: --%</span>
+                <span style="color: var(--draw-color);" id="txt-draw">Empate: --%</span>
+                <span style="color: var(--away-color);" id="txt-away">Fora: --%</span>
+            </div>
             <div class="prob-bar">
                 <div class="prob-home" id="bar-home" style="width: 33%;"></div>
                 <div class="prob-draw" id="bar-draw" style="width: 33%;"></div>
                 <div class="prob-away" id="bar-away" style="width: 34%;"></div>
             </div>
-            <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; margin-top: 5px;">
-                <span style="color: var(--fin-color);" id="txt-home">--%</span>
-                <span style="color: var(--warn-color);" id="txt-draw">--%</span>
-                <span style="color: var(--danger-color);" id="txt-away">--%</span>
-            </div>
+        </div>
+        
+        <div class="grid-2" style="margin-top: 20px;">
+            <div class="result-stat"><span>Gols Esperados (Mandante)</span><strong id="res-xg-home">--</strong></div>
+            <div class="result-stat"><span>Gols Esperados (Visitante)</span><strong id="res-xg-away">--</strong></div>
         </div>
     </div>
 
-    <!-- HISTÓRICO DE APOSTAS / PREVISÕES -->
+    <!-- HISTÓRICO -->
     <div class="card" style="margin-top: 20px;">
-        <h3 style="margin-top:0; font-size: 16px;">📜 Histórico / Win Rate</h3>
-        <div id="lista-previsoes" style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
-            <p style="font-size:12px; color:var(--text-muted); text-align:center;">Carregando...</p>
-        </div>
+        <div class="card-header">📜 Histórico e Tracking</div>
+        <div id="lista-previsoes" style="max-height: 400px; overflow-y: auto;"></div>
     </div>
 </div>
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Predictor PRO - Poisson + EV</title>
+    <title>Predictor PRO - Poisson + EV Ranking</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -69,7 +69,13 @@
 
     <!-- Dados Base -->
     <div class="card">
-        <div class="card-header"><span>📊 Dados do Campeonato</span></div>
+        <div class="card-header">
+            <span>📊 Dados do Campeonato</span>
+            <button class="btn-outline" onclick="toggleTutorial()" id="btn-tut">Ler Instruções</button>
+        </div>
+        <div class="tutorial-box" id="tutorial">
+            <p><strong>Como usar:</strong> Insira os dados da temporada atual e as médias da temporada passada. No painel final, digite as odds para encontrar o EV+ (Aposta de Valor).</p>
+        </div>
         <div class="grid-2">
             <div class="form-group"><label>Média Gols Casa (Liga):</label><input type="number" id="l-home" step="0.01" value="1.45"></div>
             <div class="form-group"><label>Média Gols Fora (Liga):</label><input type="number" id="l-away" step="0.01" value="1.15"></div>
@@ -132,10 +138,18 @@
     <div id="card-resultado" class="card" style="margin-top: 20px; display: none;">
         <div class="card-header">🎯 Veredito do Algoritmo</div>
         
-        <!-- Onde a Mágica do EV acontece -->
+        <!-- Bloco de EV -->
         <div class="result-stat" style="background: #ecfdf5; border-color: #a7f3d0; margin-bottom: 20px;">
             <span style="color: #065f46;">Aposta Recomendada (Maior EV)</span>
             <strong style="color: var(--success); font-size: 20px;" id="res-ev">--</strong>
+            
+            <!-- LISTA DE RANKING DOS OUTROS EV'S -->
+            <div id="ev-ranking-container" style="margin-top: 15px; border-top: 1px dashed #a7f3d0; padding-top: 15px; display: none; text-align: left;">
+                <span style="color: #065f46; font-size: 11px; margin-bottom: 10px; display: block;">RANKING DE TODAS AS ODDS:</span>
+                <div id="ev-list" style="display: flex; flex-direction: column; gap: 6px;">
+                    <!-- Itens serão injetados aqui -->
+                </div>
+            </div>
         </div>
 
         <div class="result-stat" style="background: #eff6ff; border-color: #bfdbfe;">
